@@ -183,11 +183,9 @@ func sweepJobDefinitions(region string) error {
 		}
 
 		for _, v := range page.JobDefinitions {
-			r := ResourceJobDefinition()
-			d := r.Data(nil)
-			d.SetId(aws.StringValue(v.JobDefinitionArn))
-
-			sweepResources = append(sweepResources, sdk.NewSweepResource(r, d, client))
+			sweepResources = append(sweepResources, framework.NewSweepResource(newResourceJobDefinition, client,
+				framework.NewAttribute("id", aws.StringValue(v.JobDefinitionArn)),
+			))
 		}
 
 		return !lastPage

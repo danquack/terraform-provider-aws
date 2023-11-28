@@ -139,6 +139,10 @@ func autoFlexConvertStruct(ctx context.Context, from any, to any, flexer autoFle
 		if fieldName == "Tags" {
 			continue // Resource tags are handled separately.
 		}
+		if fieldName == "ContainerProperties" || fieldName == "NodeProperties" {
+			// TODO: Figure this out
+			continue // Resource properties are handled separately.
+		}
 		toFieldVal := findFieldFuzzy(fieldName, valTo)
 		if !toFieldVal.IsValid() {
 			continue // Corresponding field not found in to.
