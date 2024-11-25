@@ -44,6 +44,98 @@ func (d *jobDefinitionDataSource) Metadata(_ context.Context, request datasource
 	response.TypeName = "aws_batch_job_definition"
 }
 
+func (d *jobDefinitionDataSource) SchemaEKSContainer(ctx context.Context) schema.NestedBlockObject {
+	return schema.NestedBlockObject{
+		Attributes: map[string]schema.Attribute{
+			"args": schema.ListAttribute{
+				Computed:    true,
+				ElementType: types.StringType,
+			},
+			"command": schema.ListAttribute{
+				Computed:    true,
+				ElementType: types.StringType,
+			},
+			"image": schema.StringAttribute{
+				Computed: true,
+			},
+			"image_pull_policy": schema.StringAttribute{
+				Computed: true,
+			},
+			"name": schema.StringAttribute{
+				Computed: true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"env": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Computed: true,
+						},
+						"value": schema.StringAttribute{
+							Computed: true,
+						},
+					},
+				},
+			},
+			"resources": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerResourceRequirementsModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"limits": schema.MapAttribute{
+							Computed:    true,
+							ElementType: types.StringType,
+						},
+						"requests": schema.MapAttribute{
+							Computed:    true,
+							ElementType: types.StringType,
+						},
+					},
+				},
+			},
+			"security_context": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerSecurityContextModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"privileged": schema.BoolAttribute{
+							Computed: true,
+						},
+						"run_as_user": schema.Int64Attribute{
+							Computed: true,
+						},
+						"read_only_root_filesystem": schema.BoolAttribute{
+							Computed: true,
+						},
+						"run_as_non_root": schema.BoolAttribute{
+							Computed: true,
+						},
+						"run_as_group": schema.Int64Attribute{
+							Computed: true,
+						},
+					},
+				},
+			},
+			"volume_mounts": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerVolumeMountModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"mount_path": schema.StringAttribute{
+							Computed: true,
+						},
+						"read_only": schema.BoolAttribute{
+							Computed: true,
+						},
+						"sub_path": schema.StringAttribute{
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func (d *jobDefinitionDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
@@ -57,16 +149,10 @@ func (d *jobDefinitionDataSource) Schema(ctx context.Context, request datasource
 			"container_orchestration_type": schema.StringAttribute{
 				Computed: true,
 			},
-			"eks_properties": schema.ListAttribute{
-				CustomType: fwtypes.NewListNestedObjectTypeOf[eksPropertiesModel](ctx),
-				Computed:   true,
-				ElementType: types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"pod_properties": fwtypes.NewListNestedObjectTypeOf[eksPodPropertiesModel](ctx),
-					},
-				},
-			},
 			names.AttrID: framework.IDAttribute(),
+			"memory": schema.Int32Attribute{
+				Computed: true,
+			},
 			names.AttrName: schema.StringAttribute{
 				Optional: true,
 			},
@@ -91,14 +177,24 @@ func (d *jobDefinitionDataSource) Schema(ctx context.Context, request datasource
 					},
 				},
 			},
+			"repository_credentials": schema.ListAttribute{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[repositoryCredentialsModel](ctx),
+				Computed:   true,
+				ElementType: types.ObjectType{
+					AttrTypes: map[string]attr.Type{
+						"credentials_parameter": types.StringType,
+					},
+				},
+			},
 			"revision": schema.Int64Attribute{
+				Computed: true,
 				Optional: true,
 			},
 			"scheduling_priority": schema.Int64Attribute{
 				Computed: true,
 			},
 			names.AttrStatus: schema.StringAttribute{
-				Optional: true,
+				Computed: true,
 				Validators: []validator.String{
 					stringvalidator.OneOf(jobDefinitionStatus_Values()...),
 				},
@@ -115,6 +211,90 @@ func (d *jobDefinitionDataSource) Schema(ctx context.Context, request datasource
 			},
 			names.AttrType: schema.StringAttribute{
 				Computed: true,
+			},
+			"vcpus": schema.Int32Attribute{
+				Computed: true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"eks_properties": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksPropertiesModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Blocks: map[string]schema.Block{
+						"pod_properties": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[eksPodPropertiesModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"dns_policy": schema.StringAttribute{
+										Computed: true,
+									},
+									"host_network": schema.BoolAttribute{
+										Computed: true,
+									},
+									"service_account_name": schema.StringAttribute{
+										Computed: true,
+									},
+									"share_process_namespace": schema.BoolAttribute{
+										Computed: true,
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"containers": schema.ListNestedBlock{
+										CustomType:   fwtypes.NewListNestedObjectTypeOf[eksContainerModel](ctx),
+										NestedObject: d.SchemaEKSContainer(ctx),
+									},
+									"image_pull_secrets": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[eksImagePullSecrets](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"name": schema.StringAttribute{
+													Computed: true,
+												},
+											},
+										},
+									},
+									"init_containers": schema.ListNestedBlock{
+										CustomType:   fwtypes.NewListNestedObjectTypeOf[eksContainerModel](ctx),
+										NestedObject: d.SchemaEKSContainer(ctx),
+									},
+									"metadata": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[eksMetadataModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"labels": schema.MapAttribute{
+													Computed: true,
+
+													ElementType: types.StringType,
+												},
+											},
+										},
+									},
+									"volumes": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[eksVolumeModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"name": schema.StringAttribute{
+													Computed: true,
+												},
+											},
+											Blocks: map[string]schema.Block{
+												"empty_dir": schema.ListNestedBlock{
+													CustomType: fwtypes.NewListNestedObjectTypeOf[eksEmptyDirModel](ctx),
+												},
+												"host_path": schema.ListNestedBlock{
+													CustomType: fwtypes.NewListNestedObjectTypeOf[eksHostPathModel](ctx),
+												},
+												"secret": schema.ListNestedBlock{
+													CustomType: fwtypes.NewListNestedObjectTypeOf[eksSecretModel](ctx),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -215,46 +395,32 @@ func (d *jobDefinitionDataSource) ConfigValidators(context.Context) []resource.C
 }
 
 type jobDefinitionDataSourceModel struct {
-	ARNPrefix                  types.String                                         `tfsdk:"arn_prefix"`
-	ContainerOrchestrationType types.String                                         `tfsdk:"container_orchestration_type"`
-	EKSProperties              fwtypes.ListNestedObjectValueOf[eksPropertiesModel]  `tfsdk:"eks_properties"`
-	ID                         types.String                                         `tfsdk:"id"`
-	JobDefinitionARN           fwtypes.ARN                                          `tfsdk:"arn"`
-	JobDefinitionName          types.String                                         `tfsdk:"name"`
-	NodeProperties             fwtypes.ListNestedObjectValueOf[nodePropertiesModel] `tfsdk:"node_properties"`
-	RetryStrategy              fwtypes.ListNestedObjectValueOf[retryStrategyModel]  `tfsdk:"retry_strategy"`
-	Revision                   types.Int64                                          `tfsdk:"revision"`
-	SchedulingPriority         types.Int64                                          `tfsdk:"scheduling_priority"`
-	Status                     types.String                                         `tfsdk:"status"`
-	Tags                       tftags.Map                                           `tfsdk:"tags"`
-	Timeout                    fwtypes.ListNestedObjectValueOf[jobTimeoutModel]     `tfsdk:"timeout"`
-	Type                       types.String                                         `tfsdk:"type"`
+	ARNPrefix                  types.String                                                `tfsdk:"arn_prefix"`
+	ContainerOrchestrationType types.String                                                `tfsdk:"container_orchestration_type"`
+	EKSProperties              fwtypes.ListNestedObjectValueOf[eksPropertiesModel]         `tfsdk:"eks_properties"`
+	ID                         types.String                                                `tfsdk:"id"`
+	JobDefinitionARN           fwtypes.ARN                                                 `tfsdk:"arn"`
+	JobDefinitionName          types.String                                                `tfsdk:"name"`
+	Memory                     types.Int32                                                 `tfsdk:"memory"`
+	NodeProperties             fwtypes.ListNestedObjectValueOf[nodePropertiesModel]        `tfsdk:"node_properties"`
+	RetryStrategy              fwtypes.ListNestedObjectValueOf[retryStrategyModel]         `tfsdk:"retry_strategy"`
+	RepositoryCredentials      fwtypes.ListNestedObjectValueOf[repositoryCredentialsModel] `tfsdk:"repository_credentials"`
+	Revision                   types.Int64                                                 `tfsdk:"revision"`
+	SchedulingPriority         types.Int64                                                 `tfsdk:"scheduling_priority"`
+	Status                     types.String                                                `tfsdk:"status"`
+	Tags                       tftags.Map                                                  `tfsdk:"tags"`
+	Timeout                    fwtypes.ListNestedObjectValueOf[jobTimeoutModel]            `tfsdk:"timeout"`
+	Type                       types.String                                                `tfsdk:"type"`
+	VCPUs                      types.Int32                                                 `tfsdk:"vcpus"`
 }
 
 type eksPropertiesModel struct {
 	PodProperties fwtypes.ListNestedObjectValueOf[eksPodPropertiesModel] `tfsdk:"pod_properties"`
 }
 
-type DNSPolicy struct {
-	types.String
-}
-
-func (d DNSPolicy) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	for _, v := range dnsPolicy_Values() {
-		if strings.EqualFold(v, req.ConfigValue.ValueString()) {
-			return
-		}
-	}
-	resp.Diagnostics.AddAttributeError(
-		req.Path,
-		"Invalid DNS Policy",
-		fmt.Sprintf("must be one of %s", strings.Join(dnsPolicy_Values(), ", ")),
-	)
-}
-
 type eksPodPropertiesModel struct {
 	Containers            fwtypes.ListNestedObjectValueOf[eksContainerModel]   `tfsdk:"containers"`
-	DNSPolicy             DNSPolicy                                            `tfsdk:"dns_policy"`
+	DNSPolicy             types.String                                         `tfsdk:"dns_policy"`
 	HostNetwork           types.Bool                                           `tfsdk:"host_network"`
 	ImagePullSecrets      fwtypes.ListNestedObjectValueOf[eksImagePullSecrets] `tfsdk:"image_pull_secrets"`
 	InitContainers        fwtypes.ListNestedObjectValueOf[eksContainerModel]   `tfsdk:"init_containers"`
@@ -268,29 +434,12 @@ type eksImagePullSecrets struct {
 	Name types.String `tfsdk:"name"`
 }
 
-type ImagePullPolicy struct {
-	types.String
-}
-
-func (d ImagePullPolicy) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	for _, v := range imagePullPolicy_Values() {
-		if strings.EqualFold(v, req.ConfigValue.ValueString()) {
-			return
-		}
-	}
-	resp.Diagnostics.AddAttributeError(
-		req.Path,
-		"Invalid Image Pull Secret",
-		fmt.Sprintf("must be one of %s", strings.Join(imagePullPolicy_Values(), ", ")),
-	)
-}
-
 type eksContainerModel struct {
 	Args            fwtypes.ListValueOf[types.String]                                      `tfsdk:"args"`
 	Command         fwtypes.ListValueOf[types.String]                                      `tfsdk:"command"`
 	Env             fwtypes.ListNestedObjectValueOf[eksContainerEnvironmentVariableModel]  `tfsdk:"env"`
 	Image           types.String                                                           `tfsdk:"image"`
-	ImagePullPolicy ImagePullPolicy                                                        `tfsdk:"image_pull_policy"`
+	ImagePullPolicy types.String                                                           `tfsdk:"image_pull_policy"`
 	Name            types.String                                                           `tfsdk:"name"`
 	Resources       fwtypes.ListNestedObjectValueOf[eksContainerResourceRequirementsModel] `tfsdk:"resources"`
 	SecurityContext fwtypes.ListNestedObjectValueOf[eksContainerSecurityContextModel]      `tfsdk:"security_context"`
@@ -353,8 +502,11 @@ type nodePropertiesModel struct {
 }
 
 type nodeRangePropertyModel struct {
-	Container   fwtypes.ListNestedObjectValueOf[containerPropertiesModel] `tfsdk:"container"`
-	TargetNodes types.String                                              `tfsdk:"target_nodes"`
+	Container     fwtypes.ListNestedObjectValueOf[containerPropertiesModel] `tfsdk:"container"`
+	EKSProperties fwtypes.ListNestedObjectValueOf[eksPropertiesModel]       `tfsdk:"eks_properties"`
+	ECSProperties fwtypes.ListNestedObjectValueOf[ecsPropertiesModel]       `tfsdk:"ecs_properties"`
+	TargetNodes   types.String                                              `tfsdk:"target_nodes"`
+	InstanceTypes fwtypes.ListValueOf[types.String]                         `tfsdk:"instance_types"`
 }
 
 type containerPropertiesModel struct {
@@ -363,6 +515,7 @@ type containerPropertiesModel struct {
 	EphemeralStorage             fwtypes.ListNestedObjectValueOf[ephemeralStorageModel]             `tfsdk:"ephemeral_storage"`
 	ExecutionRoleARN             types.String                                                       `tfsdk:"execution_role_arn"`
 	FargatePlatformConfiguration fwtypes.ListNestedObjectValueOf[fargatePlatformConfigurationModel] `tfsdk:"fargate_platform_configuration"`
+	Memory                       types.Int32                                                        `tfsdk:"memory"`
 	Image                        types.String                                                       `tfsdk:"image"`
 	InstanceType                 types.String                                                       `tfsdk:"instance_type"`
 	JobRoleARN                   types.String                                                       `tfsdk:"job_role_arn"`
@@ -372,12 +525,38 @@ type containerPropertiesModel struct {
 	NetworkConfiguration         fwtypes.ListNestedObjectValueOf[networkConfigurationModel]         `tfsdk:"network_configuration"`
 	Privileged                   types.Bool                                                         `tfsdk:"privileged"`
 	ReadonlyRootFilesystem       types.Bool                                                         `tfsdk:"readonly_root_filesystem"`
+	RepositoryCredential         fwtypes.ListNestedObjectValueOf[repositoryCredentialsModel]        `tfsdk:"repository_credentials"`
 	ResourceRequirements         fwtypes.ListNestedObjectValueOf[resourceRequirementModel]          `tfsdk:"resource_requirements"`
 	RuntimePlatform              fwtypes.ListNestedObjectValueOf[runtimePlatformModel]              `tfsdk:"runtime_platform"`
 	Secrets                      fwtypes.ListNestedObjectValueOf[secretModel]                       `tfsdk:"secrets"`
 	Ulimits                      fwtypes.ListNestedObjectValueOf[ulimitModel]                       `tfsdk:"ulimits"`
 	User                         types.String                                                       `tfsdk:"user"`
+	Vcpus                        types.Int32                                                        `tfsdk:"vcpus"`
 	Volumes                      fwtypes.ListNestedObjectValueOf[volumeModel]                       `tfsdk:"volumes"`
+}
+
+type taskPropertiesContainerModel struct {
+	Image                  types.String                                                  `tfsdk:"image"`
+	Command                fwtypes.ListValueOf[types.String]                             `tfsdk:"command"`
+	DependsOn              fwtypes.ListNestedObjectValueOf[taskContainerDependencyModel] `tfsdk:"depends_on"`
+	Environment            fwtypes.ListNestedObjectValueOf[keyValuePairModel]            `tfsdk:"environment"`
+	Essential              types.Bool                                                    `tfsdk:"essential"`
+	LinuxParameters        fwtypes.ListNestedObjectValueOf[linuxParametersModel]         `tfsdk:"linux_parameters"`
+	LogConfiguration       fwtypes.ListNestedObjectValueOf[logConfigurationModel]        `tfsdk:"log_configuration"`
+	MountPoints            fwtypes.ListNestedObjectValueOf[mountPointModel]              `tfsdk:"mount_points"`
+	Name                   types.String                                                  `tfsdk:"name"`
+	Privileged             types.Bool                                                    `tfsdk:"privileged"`
+	ReadonlyRootFilesystem types.Bool                                                    `tfsdk:"readonly_root_filesystem"`
+	ResourceRequirements   fwtypes.ListNestedObjectValueOf[resourceRequirementModel]     `tfsdk:"resource_requirements"`
+	RepositoryCredentials  fwtypes.ListNestedObjectValueOf[repositoryCredentialsModel]   `tfsdk:"repository_credentials"`
+	Secrets                fwtypes.ListNestedObjectValueOf[secretModel]                  `tfsdk:"secrets"`
+	Ulimits                fwtypes.ListNestedObjectValueOf[ulimitModel]                  `tfsdk:"ulimits"`
+	User                   types.String                                                  `tfsdk:"user"`
+}
+
+type taskContainerDependencyModel struct {
+	Condition     types.String `tfsdk:"condition"`
+	ContainerName types.String `tfsdk:"container_name"`
 }
 
 type keyValuePairModel struct {

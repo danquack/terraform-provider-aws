@@ -5,7 +5,6 @@ package batch
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -14,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/batch"
 	awstypes "github.com/aws/aws-sdk-go-v2/service/batch/types"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -23,7 +22,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-provider-aws/internal/create"
 	"github.com/hashicorp/terraform-provider-aws/internal/enum"
+	internalFlex "github.com/hashicorp/terraform-provider-aws/internal/flex"
 	"github.com/hashicorp/terraform-provider-aws/internal/framework"
 	"github.com/hashicorp/terraform-provider-aws/internal/framework/flex"
 	fwtypes "github.com/hashicorp/terraform-provider-aws/internal/framework/types"
@@ -41,6 +43,7 @@ import (
 )
 
 // @Tags(identifierAttribute="arn")
+// @Testing(importIgnore="deregister_on_new_revision")
 // @FrameworkResource("aws_batch_job_definition", name="Job Definition")
 func newResourceJobDefinition(_ context.Context) (resource.ResourceWithConfigure, error) {
 	r := &resourceJobDefinition{}
@@ -60,6 +63,798 @@ func (r *resourceJobDefinition) Metadata(_ context.Context, req resource.Metadat
 	resp.TypeName = "aws_batch_job_definition"
 }
 
+func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.NestedBlockObject {
+	return schema.NestedBlockObject{
+		Attributes: map[string]schema.Attribute{
+			"command": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"execution_role_arn": schema.StringAttribute{
+				Optional: true,
+			},
+			"image": schema.StringAttribute{
+				Optional: true,
+			},
+			"instance_type": schema.StringAttribute{
+				Optional: true,
+			},
+			"job_role_arn": schema.StringAttribute{
+				Optional: true,
+			},
+			"memory": schema.Int32Attribute{
+				Optional: true,
+			},
+			"privileged": schema.BoolAttribute{
+				Optional: true,
+			},
+			"readonly_root_filesystem": schema.BoolAttribute{
+				Optional: true,
+			},
+			"user": schema.StringAttribute{
+				Optional: true,
+			},
+			"vcpus": schema.Int32Attribute{
+				Optional: true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"environment": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Optional: true,
+						},
+						"value": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"ephemeral_storage": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[ephemeralStorageModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"size_in_gib": schema.Int64Attribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"fargate_platform_configuration": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[fargatePlatformConfigurationModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"platform_version": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"linux_parameters": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[linuxParametersModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"devices": schema.ListAttribute{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[deviceModel](ctx),
+							Optional:   true,
+						},
+						"init_process_enabled": schema.BoolAttribute{
+							Optional: true,
+						},
+						"max_swap": schema.Int64Attribute{
+							Optional: true,
+						},
+						"shared_memory_size": schema.Int64Attribute{
+							Optional: true,
+						},
+						"swappiness": schema.Int64Attribute{
+							Optional: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"tmpfs": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[tmpfsModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"container_path": schema.StringAttribute{
+										Optional: true,
+									},
+									"size": schema.Int64Attribute{
+										Optional: true,
+									},
+									"mount_options": schema.ListAttribute{
+										ElementType: types.StringType,
+										Optional:    true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"log_configuration": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[logConfigurationModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"log_driver": schema.StringAttribute{
+							Optional: true,
+						},
+						"options": schema.MapAttribute{
+							Optional:    true,
+							ElementType: types.StringType,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"secret_options": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Optional: true,
+									},
+									"value_from": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"mount_points": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[mountPointModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"container_path": schema.StringAttribute{
+							Optional: true,
+						},
+						"read_only": schema.BoolAttribute{
+							Optional: true,
+						},
+						"source_volume": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"network_configuration": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[networkConfigurationModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"assign_public_ip": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+							PlanModifiers: []planmodifier.Bool{
+								boolplanmodifier.UseStateForUnknown(),
+							},
+						},
+					},
+				},
+			},
+			"resource_requirements": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[resourceRequirementModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"type": schema.StringAttribute{
+							Optional: true,
+						},
+						"value": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"repository_credentials": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[repositoryCredentialsModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"credentials_parameter": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"runtime_platform": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[runtimePlatformModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"cpu_architecture": schema.StringAttribute{
+							Optional: true,
+						},
+						"operating_system_family": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"secrets": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Optional: true,
+						},
+						"value_from": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"ulimits": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[ulimitModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"hard_limit": schema.Int64Attribute{
+							Optional: true,
+						},
+						"name": schema.StringAttribute{
+							Optional: true,
+						},
+						"soft_limit": schema.Int64Attribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"volumes": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[volumeModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"efs_volume_configuration": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[efsVolumeConfigurationModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"file_system_id": schema.StringAttribute{
+										Optional: true,
+									},
+									"root_directory": schema.StringAttribute{
+										Optional: true,
+									},
+									"transit_encryption": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"authorization_config": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[efsAuthorizationConfigModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"access_point_id": schema.StringAttribute{
+													Optional: true,
+												},
+												"iam": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"host": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[hostModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"source_path": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.NestedBlockObject {
+	return schema.NestedBlockObject{
+		Attributes: map[string]schema.Attribute{
+			"args": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"command": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"image": schema.StringAttribute{
+				Optional: true,
+			},
+			"image_pull_policy": schema.StringAttribute{
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.OneOf(imagePullPolicy_Values()...),
+				},
+			},
+			"name": schema.StringAttribute{
+				Optional: true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"env": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Optional: true,
+						},
+						"value": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"resources": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerResourceRequirementsModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"limits": schema.MapAttribute{
+							Optional:    true,
+							Computed:    true,
+							ElementType: types.StringType,
+						},
+						"requests": schema.MapAttribute{
+							Computed:    true,
+							Optional:    true,
+							ElementType: types.StringType,
+						},
+					},
+				},
+			},
+			"security_context": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerSecurityContextModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"privileged": schema.BoolAttribute{
+							Optional: true,
+						},
+						"run_as_user": schema.Int64Attribute{
+							Optional: true,
+						},
+						"read_only_root_filesystem": schema.BoolAttribute{
+							Optional: true,
+						},
+						"run_as_non_root": schema.BoolAttribute{
+							Optional: true,
+						},
+						"run_as_group": schema.Int64Attribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"volume_mounts": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerVolumeMountModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"mount_path": schema.StringAttribute{
+							Optional: true,
+						},
+						"read_only": schema.BoolAttribute{
+							Optional: true,
+						},
+						"sub_path": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.NestedBlockObject {
+	return schema.NestedBlockObject{
+		Blocks: map[string]schema.Block{
+			"task_properties": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[ecsTaskPropertiesModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"execution_role_arn": schema.StringAttribute{
+							Optional: true,
+						},
+						"ipc_mode": schema.StringAttribute{
+							Optional: true,
+						},
+						"pid_mode": schema.StringAttribute{
+							Optional: true,
+						},
+						"platform_version": schema.StringAttribute{
+							Optional: true,
+						},
+						"task_role_arn": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"containers": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[taskPropertiesContainerModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"command": schema.ListAttribute{
+										Optional:    true,
+										ElementType: types.StringType,
+									},
+									"image": schema.StringAttribute{
+										Optional: true,
+									},
+									"essential": schema.BoolAttribute{
+										Optional: true,
+										Computed: true,
+									},
+									"name": schema.StringAttribute{
+										Optional: true,
+									},
+									"privileged": schema.BoolAttribute{
+										Optional: true,
+									},
+									"readonly_root_filesystem": schema.BoolAttribute{
+										Optional: true,
+										Computed: true,
+									},
+									"user": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"depends_on": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[taskContainerDependencyModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"condition": schema.StringAttribute{
+													Optional: true,
+												},
+												"container_name": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+									"environment": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"name": schema.StringAttribute{
+													Optional: true,
+												},
+												"value": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+									"linux_parameters": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[linuxParametersModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"devices": schema.ListAttribute{
+													CustomType: fwtypes.NewListNestedObjectTypeOf[deviceModel](ctx),
+													Optional:   true,
+												},
+												"init_process_enabled": schema.BoolAttribute{
+													Optional: true,
+												},
+												"max_swap": schema.Int64Attribute{
+													Optional: true,
+												},
+												"shared_memory_size": schema.Int64Attribute{
+													Optional: true,
+												},
+												"swappiness": schema.Int64Attribute{
+													Optional: true,
+												},
+											},
+											Blocks: map[string]schema.Block{
+												"tmpfs": schema.ListNestedBlock{
+													CustomType: fwtypes.NewListNestedObjectTypeOf[tmpfsModel](ctx),
+													NestedObject: schema.NestedBlockObject{
+														Attributes: map[string]schema.Attribute{
+															"container_path": schema.StringAttribute{
+																Optional: true,
+															},
+															"size": schema.Int64Attribute{
+																Optional: true,
+															},
+															"mount_options": schema.ListAttribute{
+																ElementType: types.StringType,
+																Optional:    true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									"log_configuration": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[logConfigurationModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"log_driver": schema.StringAttribute{
+													Optional: true,
+												},
+												"options": schema.MapAttribute{
+													Optional:    true,
+													ElementType: types.StringType,
+												},
+											},
+											Blocks: map[string]schema.Block{
+												"secret_options": schema.ListNestedBlock{
+													CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
+													NestedObject: schema.NestedBlockObject{
+														Attributes: map[string]schema.Attribute{
+															"name": schema.StringAttribute{
+																Optional: true,
+															},
+															"value_from": schema.StringAttribute{
+																Optional: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									"mount_points": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[mountPointModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"container_path": schema.StringAttribute{
+													Optional: true,
+												},
+												"read_only": schema.BoolAttribute{
+													Optional: true,
+												},
+												"source_volume": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+									"repository_credentials": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[repositoryCredentialsModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"credentials_parameter": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+									"resource_requirements": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[resourceRequirementModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"type": schema.StringAttribute{
+													Optional: true,
+												},
+												"value": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+									"secrets": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"name": schema.StringAttribute{
+													Optional: true,
+												},
+												"value_from": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+									"ulimits": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[ulimitModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"name": schema.StringAttribute{
+													Optional: true,
+												},
+												"hard_limit": schema.Int64Attribute{
+													Optional: true,
+												},
+												"soft_limit": schema.Int64Attribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"ephemeral_storage": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[ephemeralStorageModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"size_in_gib": schema.Int64Attribute{
+										Optional: true,
+									},
+								},
+							},
+						},
+						"network_configuration": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[networkConfigurationModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"assign_public_ip": schema.BoolAttribute{
+										Optional: true,
+									},
+								},
+							},
+						},
+						"runtime_platform": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[runtimePlatformModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"cpu_architecture": schema.StringAttribute{
+										Optional: true,
+									},
+									"operating_system_family": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+							},
+						},
+						"volumes": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[volumeModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"host": schema.ListNestedBlock{
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"source_path": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+									"efs_volume_configuration": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[efsVolumeConfigurationModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"file_system_id": schema.StringAttribute{
+													Optional: true,
+												},
+												"root_directory": schema.StringAttribute{
+													Optional: true,
+												},
+												"transit_encryption": schema.StringAttribute{
+													Optional: true,
+												},
+												"transit_encryption_port": schema.Int64Attribute{
+													Optional: true,
+												},
+											},
+											Blocks: map[string]schema.Block{
+												"authorization_config": schema.ListNestedBlock{
+													CustomType: fwtypes.NewListNestedObjectTypeOf[efsAuthorizationConfigModel](ctx),
+													NestedObject: schema.NestedBlockObject{
+														Attributes: map[string]schema.Attribute{
+															"access_point_id": schema.StringAttribute{
+																Optional: true,
+															},
+															"iam": schema.StringAttribute{
+																Optional: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (r *resourceJobDefinition) SchemaEKSProperties(ctx context.Context) schema.NestedBlockObject {
+	return schema.NestedBlockObject{
+		Blocks: map[string]schema.Block{
+			"pod_properties": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksPodPropertiesModel](ctx),
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"dns_policy": schema.StringAttribute{
+							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf(dnsPolicy_Values()...),
+							},
+						},
+						"host_network": schema.BoolAttribute{
+							Optional: true,
+						},
+						"service_account_name": schema.StringAttribute{
+							Optional: true,
+						},
+						"share_process_namespace": schema.BoolAttribute{
+							Optional: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"containers": schema.ListNestedBlock{
+							CustomType:   fwtypes.NewListNestedObjectTypeOf[eksContainerModel](ctx),
+							NestedObject: r.SchemaEKSContainer(ctx),
+						},
+						"image_pull_secrets": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[eksImagePullSecrets](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+							},
+						},
+						"init_containers": schema.ListNestedBlock{
+							CustomType:   fwtypes.NewListNestedObjectTypeOf[eksContainerModel](ctx),
+							NestedObject: r.SchemaEKSContainer(ctx),
+						},
+						"metadata": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[eksMetadataModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"labels": schema.MapAttribute{
+										Optional:    true,
+										Computed:    true,
+										ElementType: types.StringType,
+									},
+								},
+							},
+						},
+						"volumes": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[eksVolumeModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Optional: true,
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"empty_dir": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[eksEmptyDirModel](ctx),
+									},
+									"host_path": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[eksHostPathModel](ctx),
+									},
+									"secret": schema.ListNestedBlock{
+										CustomType: fwtypes.NewListNestedObjectTypeOf[eksSecretModel](ctx),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
@@ -71,45 +866,11 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"container_properties": schema.StringAttribute{
-				Optional:   true,
-				CustomType: jsontypes.NormalizedType{},
-				Validators: []validator.String{
-					containerPropertiesValidator{},
-					stringvalidator.ExactlyOneOf(
-						path.MatchRoot("container_properties"),
-						path.MatchRoot("ecs_properties"),
-						path.MatchRoot("eks_properties"),
-						path.MatchRoot("node_properties"),
-					),
-				},
-				PlanModifiers: []planmodifier.String{
-					ContainerPropertiesStringPlanModifier(),
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+
 			"deregister_on_new_revision": schema.BoolAttribute{
 				Default:  booldefault.StaticBool(false),
 				Optional: true,
 				Computed: true,
-			},
-			"ecs_properties": schema.StringAttribute{
-				Optional: true,
-				Validators: []validator.String{
-					ecsPropertiesValidator{},
-				},
-				PlanModifiers: []planmodifier.String{
-					ECSStringPlanModifier(),
-				},
-			},
-			"eks_properties": schema.ListAttribute{
-				CustomType: fwtypes.NewListNestedObjectTypeOf[eksResourcePropertiesModel](ctx),
-				Optional:   true,
-				ElementType: types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"pod_properties": fwtypes.NewListNestedObjectTypeOf[eksResourcePropertiesModel](ctx),
-					},
-				},
 			},
 
 			names.AttrName: schema.StringAttribute{
@@ -124,28 +885,14 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 					),
 				},
 			},
-			"node_properties": schema.StringAttribute{
-				Optional: true,
-				Validators: []validator.String{
-					nodePropertiesValidator{},
-				},
-				PlanModifiers: []planmodifier.String{
-					NodePropertiesStringPlanModifier(),
-				},
-			},
+
 			names.AttrParameters: schema.MapAttribute{
-				Optional:    true,
+				CustomType:  fwtypes.MapOfStringType,
 				ElementType: types.StringType,
-			},
-			"retry_strategy": schema.ListAttribute{
-				CustomType: fwtypes.NewListNestedObjectTypeOf[retryStrategyModel](ctx),
-				Computed:   true,
-				Optional:   true,
-				ElementType: types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"attempts":         types.Int64Type,
-						"evaluate_on_exit": fwtypes.NewListNestedObjectTypeOf[evaluateOnExitModel](ctx),
-					},
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"platform_capabilities": schema.SetAttribute{
@@ -162,7 +909,6 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				Computed: true,
 				Default:  booldefault.StaticBool(false),
 			},
-
 			"revision": schema.Int32Attribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.Int32{
@@ -191,6 +937,131 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				},
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"container_properties": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[containerPropertiesModel](ctx),
+				Validators: []validator.List{
+					listvalidator.ExactlyOneOf(
+						path.MatchRoot("container_properties"),
+						path.MatchRoot("ecs_properties"),
+						path.MatchRoot("eks_properties"),
+						path.MatchRoot("node_properties"),
+					),
+				},
+				NestedObject: r.SchemaContainer(ctx),
+			},
+			"ecs_properties": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[ecsPropertiesModel](ctx),
+				Validators: []validator.List{
+					listvalidator.ExactlyOneOf(
+						path.MatchRoot("container_properties"),
+						path.MatchRoot("ecs_properties"),
+						path.MatchRoot("eks_properties"),
+						path.MatchRoot("node_properties"),
+					),
+				},
+				NestedObject: r.SchemaECSProperties(ctx),
+			},
+			"eks_properties": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksPodPropertiesModel](ctx),
+				Validators: []validator.List{
+					listvalidator.ExactlyOneOf(
+						path.MatchRoot("container_properties"),
+						path.MatchRoot("ecs_properties"),
+						path.MatchRoot("eks_properties"),
+						path.MatchRoot("node_properties"),
+					),
+				},
+				NestedObject: r.SchemaEKSProperties(ctx),
+			},
+			"node_properties": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[nodePropertiesModel](ctx),
+				Validators: []validator.List{
+					listvalidator.ExactlyOneOf(
+						path.MatchRoot("container_properties"),
+						path.MatchRoot("ecs_properties"),
+						path.MatchRoot("eks_properties"),
+						path.MatchRoot("node_properties"),
+					),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"main_node": schema.Int64Attribute{
+							Optional: true,
+						},
+						"num_nodes": schema.Int64Attribute{
+							Optional: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"node_range_properties": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[nodeRangePropertyModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"target_nodes": schema.StringAttribute{
+										Optional: true,
+									},
+									"instance_types": schema.ListAttribute{
+										Optional:    true,
+										ElementType: types.StringType,
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"container": schema.ListNestedBlock{
+										CustomType:   fwtypes.NewListNestedObjectTypeOf[containerPropertiesModel](ctx),
+										NestedObject: r.SchemaContainer(ctx),
+									},
+									"eks_properties": schema.ListNestedBlock{
+										CustomType:   fwtypes.NewListNestedObjectTypeOf[eksPodPropertiesModel](ctx),
+										NestedObject: r.SchemaEKSProperties(ctx),
+									},
+									"ecs_properties": schema.ListNestedBlock{
+										CustomType:   fwtypes.NewListNestedObjectTypeOf[ecsPropertiesModel](ctx),
+										NestedObject: r.SchemaECSProperties(ctx),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"retry_strategy": schema.ListNestedBlock{
+				CustomType: fwtypes.NewListNestedObjectTypeOf[retryStrategyModel](ctx),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"attempts": schema.Int64Attribute{
+							Optional: true,
+							Computed: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"evaluate_on_exit": schema.ListNestedBlock{
+							CustomType: fwtypes.NewListNestedObjectTypeOf[evaluateOnExitModel](ctx),
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"action": schema.StringAttribute{
+										Optional: true,
+										Computed: true,
+									},
+									"on_exit_code": schema.StringAttribute{
+										Optional: true,
+										Computed: true,
+									},
+									"on_reason": schema.StringAttribute{
+										Optional: true,
+										Computed: true,
+									},
+									"on_status_reason": schema.StringAttribute{
+										Optional: true,
+										Computed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -204,50 +1075,15 @@ func (r *resourceJobDefinition) readJobDefinitionIntoState(ctx context.Context, 
 		return resp
 	}
 
-	state.ID = types.StringPointerValue(jd.JobDefinitionArn)
+	arn := aws.ToString(jd.JobDefinitionArn)
+	revision := internalFlex.StringValueToInt32Value(
+		strings.Split(arn, ":")[len(strings.Split(arn, ":"))-1],
+	)
 
-	if jd.Revision != nil {
-		arn, revision := aws.ToString(jd.JobDefinitionArn), aws.ToInt32(jd.Revision)
-		state.ArnPrefix = types.StringValue(strings.TrimSuffix(arn, fmt.Sprintf(":%d", revision)))
-	}
-
-	// Convert the complex arguments to string
-	// Future iterations will fully define the type
-	if jd.ContainerProperties != nil {
-		containerProps, err := flattenContainerProperties(jd.ContainerProperties)
-		if err != nil {
-			resp.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionSetting, ResNameJobDefinition, state.ID.String(), err),
-				err.Error(),
-			)
-			return resp
-		}
-		state.ContainerProperties = jsontypes.NewNormalizedValue(string(containerProps))
-	}
-
-	if jd.EcsProperties != nil {
-		ecsProps, err := flattenECSProperties(jd.EcsProperties)
-		if err != nil {
-			resp.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionSetting, ResNameJobDefinition, state.ID.String(), err),
-				err.Error(),
-			)
-			return resp
-		}
-		state.ECSProperties = types.StringValue(ecsProps)
-	}
-
-	if jd.NodeProperties != nil {
-		nodeProps, err := flattenNodeProperties(jd.NodeProperties)
-		if err != nil {
-			resp.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionSetting, ResNameJobDefinition, state.ID.String(), err),
-				err.Error(),
-			)
-			return resp
-		}
-		state.NodeProperties = types.StringValue(string(nodeProps))
-	}
+	state.ID = types.StringValue(arn)
+	state.ARN = types.StringValue(arn)
+	state.Revision = types.Int32Value(revision)
+	state.ArnPrefix = types.StringValue(strings.TrimSuffix(arn, fmt.Sprintf(":%d", revision)))
 
 	return resp
 }
@@ -281,47 +1117,6 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Marshall from string to batch type
-	// Future iterations will fully define the type
-	if !plan.ContainerProperties.IsNull() {
-		var containerProps awstypes.ContainerProperties
-		err := json.Unmarshal([]byte(plan.ContainerProperties.ValueString()), &containerProps)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionCreating, ResNameJobDefinition, plan.Name.String(), err),
-				err.Error(),
-			)
-			return
-		}
-		input.ContainerProperties = &containerProps
-	}
-
-	if !plan.ECSProperties.IsNull() {
-		var ecsProps awstypes.EcsProperties
-		err := json.Unmarshal([]byte(plan.ECSProperties.ValueString()), &ecsProps)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionCreating, ResNameJobDefinition, plan.Name.String(), err),
-				err.Error(),
-			)
-			return
-		}
-		input.EcsProperties = &ecsProps
-	}
-
-	if !plan.NodeProperties.IsNull() {
-		var nodeProps awstypes.NodeProperties
-		err := json.Unmarshal([]byte(plan.NodeProperties.ValueString()), &nodeProps)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionCreating, ResNameJobDefinition, plan.Name.String(), err),
-				err.Error(),
-			)
-			return
-		}
-		input.NodeProperties = &nodeProps
-	}
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -350,7 +1145,6 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 		)
 		return
 	}
-
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -384,10 +1178,7 @@ func (r *resourceJobDefinition) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	resp.Diagnostics.Append(flex.Flatten(ctx, out, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	setTagsOut(ctx, out.Tags)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -413,47 +1204,6 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Marshall from string to batch type
-	// Future iterations will fully define the type
-	if !plan.ContainerProperties.IsNull() {
-		var containerProps awstypes.ContainerProperties
-		err := json.Unmarshal([]byte(plan.ContainerProperties.ValueString()), &containerProps)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionCreating, ResNameJobDefinition, plan.Name.String(), err),
-				err.Error(),
-			)
-			return
-		}
-		input.ContainerProperties = &containerProps
-	}
-
-	if !plan.ECSProperties.IsNull() {
-		var ecsProps awstypes.EcsProperties
-		err := json.Unmarshal([]byte(plan.ECSProperties.ValueString()), &ecsProps)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionCreating, ResNameJobDefinition, plan.Name.String(), err),
-				err.Error(),
-			)
-			return
-		}
-		input.EcsProperties = &ecsProps
-	}
-
-	if !plan.NodeProperties.IsNull() {
-		var nodeProps awstypes.NodeProperties
-		err := json.Unmarshal([]byte(plan.NodeProperties.ValueString()), &nodeProps)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				create.ProblemStandardMessage(names.Batch, create.ErrActionCreating, ResNameJobDefinition, plan.Name.String(), err),
-				err.Error(),
-			)
-			return
-		}
-		input.NodeProperties = &nodeProps
-	}
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -474,8 +1224,15 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	state.ID = types.StringPointerValue(out.JobDefinitionArn)
-	state.Revision = types.Int32PointerValue(out.Revision)
+	jd, err := findJobDefinitionByARN(ctx, conn, *out.JobDefinitionArn)
+	if err != nil || jd == nil {
+		resp.Diagnostics.AddError(
+			create.ProblemStandardMessage(names.Batch, create.ErrActionSetting, ResNameJobDefinition, plan.ID.String(), err),
+			err.Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &state)...)
 
 	if plan.DeregisterOnNewRevision.ValueBool() {
 		tflog.Debug(ctx, fmt.Sprintf("[DEBUG] Deleting previous Batch Job Definition: %s", *out.JobDefinitionArn))
@@ -492,7 +1249,7 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *resourceJobDefinition) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -544,97 +1301,25 @@ func (r *resourceJobDefinition) ModifyPlan(ctx context.Context, request resource
 }
 
 type resourceJobDefinitionModel struct {
-	ARN                     types.String                                                `tfsdk:"arn"`
-	ArnPrefix               types.String                                                `tfsdk:"arn_prefix" autoflex:"-"`
-	ContainerProperties     jsontypes.Normalized                                        `tfsdk:"container_properties" autoflex:"-"`
-	DeregisterOnNewRevision types.Bool                                                  `tfsdk:"deregister_on_new_revision" autoflex:"-"`
-	ECSProperties           types.String                                                `tfsdk:"ecs_properties" autoflex:"-"`
-	EKSProperties           fwtypes.ListNestedObjectValueOf[eksResourcePropertiesModel] `tfsdk:"eks_properties"`
-	ID                      types.String                                                `tfsdk:"id" autoflex:"-"`
-	Name                    types.String                                                `tfsdk:"name"`
-	NodeProperties          types.String                                                `tfsdk:"node_properties" autoflex:"-"`
-	Parameters              types.Map                                                   `tfsdk:"parameters" autoflex:",legacy"`
-	PlatformCapabilities    types.Set                                                   `tfsdk:"platform_capabilities"`
-	PropagateTags           types.Bool                                                  `tfsdk:"propagate_tags" autoflex:",legacy"`
-	Revision                types.Int32                                                 `tfsdk:"revision"`
-	RetryStrategy           fwtypes.ListNestedObjectValueOf[retryStrategyModel]         `tfsdk:"retry_strategy"`
-	SchedulingPriority      types.Int32                                                 `tfsdk:"scheduling_priority"`
-	Tags                    tftags.Map                                                  `tfsdk:"tags"`
-	TagsAll                 tftags.Map                                                  `tfsdk:"tags_all"`
-	Timeout                 fwtypes.ListNestedObjectValueOf[jobTimeoutModel]            `tfsdk:"timeout"`
-	Type                    types.String                                                `tfsdk:"type"`
-}
-
-// The following custom validators are designed to ensure objects can marshal. Once converted away from string these can be removed
-// Custom validator for ECS Properties JSON
-type ecsPropertiesValidator struct{}
-
-func (v ecsPropertiesValidator) Description(ctx context.Context) string {
-	return "must be a valid ECS properties JSON document"
-}
-
-func (v ecsPropertiesValidator) MarkdownDescription(ctx context.Context) string {
-	return "must be a valid ECS properties JSON document"
-}
-
-func (v ecsPropertiesValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	if _, err := expandECSProperties(req.ConfigValue.ValueString()); err != nil {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid ECS Properties",
-			fmt.Sprintf("Unable to parse ECS properties JSON: %s", err),
-		)
-	}
-}
-
-type containerPropertiesValidator struct{}
-
-func (v containerPropertiesValidator) Description(ctx context.Context) string {
-	return "must be a valid container properties JSON document"
-}
-
-func (v containerPropertiesValidator) MarkdownDescription(ctx context.Context) string {
-	return "must be a valid container properties JSON document"
-}
-
-func (v containerPropertiesValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	if _, err := expandContainerProperties(req.ConfigValue.ValueString()); err != nil {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid Container Properties",
-			fmt.Sprintf("Unable to parse container properties JSON: %s", err),
-		)
-	}
-}
-
-type nodePropertiesValidator struct{}
-
-func (v nodePropertiesValidator) Description(ctx context.Context) string {
-	return "must be a valid node properties JSON document"
-}
-func (v nodePropertiesValidator) MarkdownDescription(ctx context.Context) string {
-	return "must be a valid node properties JSON document"
-}
-func (v nodePropertiesValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	if _, err := expandJobNodeProperties(req.ConfigValue.ValueString()); err != nil {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid Node Properties",
-			fmt.Sprintf("Unable to parse node properties JSON: %s", err),
-		)
-	}
+	ARN                     types.String                                              `tfsdk:"arn"`
+	ArnPrefix               types.String                                              `tfsdk:"arn_prefix" autoflex:"-"`
+	ContainerProperties     fwtypes.ListNestedObjectValueOf[containerPropertiesModel] `tfsdk:"container_properties"`
+	DeregisterOnNewRevision types.Bool                                                `tfsdk:"deregister_on_new_revision" autoflex:"-"`
+	ECSProperties           fwtypes.ListNestedObjectValueOf[ecsPropertiesModel]       `tfsdk:"ecs_properties"`
+	EKSProperties           fwtypes.ListNestedObjectValueOf[eksPodPropertiesModel]    `tfsdk:"eks_properties" autoflex:"noFlatten"`
+	ID                      types.String                                              `tfsdk:"id" autoflex:"-"`
+	Name                    types.String                                              `tfsdk:"name"`
+	NodeProperties          fwtypes.ListNestedObjectValueOf[nodePropertiesModel]      `tfsdk:"node_properties"`
+	Parameters              fwtypes.MapOfString                                       `tfsdk:"parameters"`
+	PlatformCapabilities    types.Set                                                 `tfsdk:"platform_capabilities"`
+	PropagateTags           types.Bool                                                `tfsdk:"propagate_tags" autoflex:",legacy"`
+	Revision                types.Int32                                               `tfsdk:"revision"`
+	RetryStrategy           fwtypes.ListNestedObjectValueOf[retryStrategyModel]       `tfsdk:"retry_strategy"`
+	SchedulingPriority      types.Int32                                               `tfsdk:"scheduling_priority"`
+	Tags                    tftags.Map                                                `tfsdk:"tags"`
+	TagsAll                 tftags.Map                                                `tfsdk:"tags_all"`
+	Timeout                 fwtypes.ListNestedObjectValueOf[jobTimeoutModel]          `tfsdk:"timeout"`
+	Type                    types.String                                              `tfsdk:"type"`
 }
 
 // Helper Functions
@@ -689,19 +1374,23 @@ func findJobDefinitions(ctx context.Context, conn *batch.Client, input *batch.De
 	return output, nil
 }
 
-type eksResourcePropertiesModel struct {
-	PodProperties fwtypes.ListNestedObjectValueOf[eksResourcePodPropertiesModel] `tfsdk:"pod_properties"`
+type ecsPropertiesModel struct {
+	TaskProperties fwtypes.ListNestedObjectValueOf[ecsTaskPropertiesModel] `tfsdk:"task_properties"`
 }
 
-type eksResourcePodPropertiesModel struct {
-	Containers  fwtypes.ListNestedObjectValueOf[eksContainerModel] `tfsdk:"containers"`
-	DNSPolicy   types.String                                       `tfsdk:"dns_policy"`
-	HostNetwork types.Bool                                         `tfsdk:"host_network"`
-	// in the resource, its image_poll_secret but in the datasource its image_pull_secrets
-	ImagePullSecrets      fwtypes.ListNestedObjectValueOf[eksImagePullSecrets] `tfsdk:"image_pull_secret"`
-	InitContainers        fwtypes.ListNestedObjectValueOf[eksContainerModel]   `tfsdk:"init_containers"`
-	Metadata              fwtypes.ListNestedObjectValueOf[eksMetadataModel]    `tfsdk:"metadata"`
-	ServiceAccountName    types.String                                         `tfsdk:"service_account_name"`
-	ShareProcessNamespace types.Bool                                           `tfsdk:"share_process_namespace"`
-	Volumes               fwtypes.ListNestedObjectValueOf[eksVolumeModel]      `tfsdk:"volumes"`
+type ecsTaskPropertiesModel struct {
+	Containers           fwtypes.ListNestedObjectValueOf[taskPropertiesContainerModel] `tfsdk:"containers"`
+	EphemeralStorage     fwtypes.ListNestedObjectValueOf[ephemeralStorageModel]        `tfsdk:"ephemeral_storage"`
+	ExecutionRoleArn     types.String                                                  `tfsdk:"execution_role_arn"`
+	IPCMode              types.String                                                  `tfsdk:"ipc_mode"`
+	NetworkConfiguration fwtypes.ListNestedObjectValueOf[networkConfigurationModel]    `tfsdk:"network_configuration"`
+	PidMode              types.String                                                  `tfsdk:"pid_mode"`
+	PlatformVersion      types.String                                                  `tfsdk:"platform_version"`
+	RuntimePlatform      fwtypes.ListNestedObjectValueOf[runtimePlatformModel]         `tfsdk:"runtime_platform"`
+	TaskRoleArn          types.String                                                  `tfsdk:"task_role_arn"`
+	Volumes              fwtypes.ListNestedObjectValueOf[volumeModel]                  `tfsdk:"volumes"`
+}
+
+type repositoryCredentialsModel struct {
+	CredentialsParameter types.String `tfsdk:"credentials_parameter"`
 }

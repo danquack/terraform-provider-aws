@@ -30,7 +30,7 @@ import (
 
 func TestAccBatchJobDefinition_basic(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -43,22 +43,14 @@ func TestAccBatchJobDefinition_basic(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, "arn_prefix", "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s`, rName))),
-					acctest.CheckResourceAttrEquivalentJSON(resourceName, "container_properties", `{
-						"command": ["echo", "test"],
-						"image": "busybox",
-						"memory": 128,
-						"vcpus": 1,
-						"environment": [],
-						"mountPoints": [],
-						"resourceRequirements": [],
-						"secrets": [],
-						"ulimits": [],
-						"volumes": []
-						}`),
-					resource.TestCheckResourceAttr(resourceName, "ecs_properties", ""),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.0", "echo"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.1", "test"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.image", "busybox"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.memory", "128"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.vcpus", "1"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
@@ -66,7 +58,6 @@ func TestAccBatchJobDefinition_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, names.AttrPropagateTags, acctest.CtFalse),
 					resource.TestCheckResourceAttr(resourceName, "retry_strategy.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "revision", "1"),
-					resource.TestCheckResourceAttr(resourceName, "scheduling_priority", "0"),
 					resource.TestCheckResourceAttr(resourceName, acctest.CtTagsPercent, "0"),
 					resource.TestCheckResourceAttr(resourceName, "timeout.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, names.AttrType, "container"),
@@ -86,7 +77,7 @@ func TestAccBatchJobDefinition_basic(t *testing.T) {
 
 func TestAccBatchJobDefinition_attributes(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 	resource.ParallelTest(t, resource.TestCase{
@@ -98,7 +89,7 @@ func TestAccBatchJobDefinition_attributes(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_attributes(rName, 2, true, 3, 120, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:1`, rName))),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, "arn_prefix", "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s`, rName))),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
@@ -119,7 +110,7 @@ func TestAccBatchJobDefinition_attributes(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_attributes(rName, 2, true, 4, 120, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:2`, rName))),
 					testAccCheckJobDefinitionPreviousRegistered(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "2"),
@@ -128,7 +119,7 @@ func TestAccBatchJobDefinition_attributes(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					testAccCheckJobDefinitionPreviousDeregistered(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:3`, rName))),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, "arn_prefix", "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s`, rName))),
@@ -153,7 +144,7 @@ func TestAccBatchJobDefinition_attributes(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_attributes(rName, 1, false, 1, 60, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					testAccCheckJobDefinitionPreviousDeregistered(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, "arn_prefix", "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s`, rName))),
@@ -178,7 +169,7 @@ func TestAccBatchJobDefinition_attributes(t *testing.T) {
 
 func TestAccBatchJobDefinition_disappears(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -191,7 +182,7 @@ func TestAccBatchJobDefinition_disappears(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.CheckFrameworkResourceDisappears(ctx, acctest.Provider, tfbatch.ResourceJobDefinition, resourceName),
 				),
 				ExpectNonEmptyPlan: true,
@@ -202,7 +193,7 @@ func TestAccBatchJobDefinition_disappears(t *testing.T) {
 
 func TestAccBatchJobDefinition_PlatformCapabilities_ec2(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -215,20 +206,15 @@ func TestAccBatchJobDefinition_PlatformCapabilities_ec2(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_capabilitiesEC2(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrEquivalentJSON(resourceName, "container_properties", `{
-						"command": ["echo", "test"],
-						"image": "busybox",
-						"memory": 128,
-						"vcpus": 1,
-						"environment": [],
-						"mountPoints": [],
-						"resourceRequirements": [],
-						"secrets": [],
-						"ulimits": [],
-						"volumes": []
-						}`),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.0", "echo"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.1", "test"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.image", "busybox"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.memory", "128"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.vcpus", "1"),
+					resource.TestCheckResourceAttr(resourceName, "eks_properties.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
 					resource.TestCheckResourceAttr(resourceName, "platform_capabilities.#", "1"),
@@ -255,7 +241,7 @@ func TestAccBatchJobDefinition_PlatformCapabilities_ec2(t *testing.T) {
 
 func TestAccBatchJobDefinition_PlatformCapabilitiesFargate_containerPropertiesDefaults(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -268,14 +254,14 @@ func TestAccBatchJobDefinition_PlatformCapabilitiesFargate_containerPropertiesDe
 			{
 				Config: testAccJobDefinitionConfig_capabilitiesFargateContainerPropertiesDefaults(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
 					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(command)", "0"),
-					acctest.CheckResourceAttrJMESPair(resourceName, "container_properties", "executionRoleArn", "aws_iam_role.ecs_task_execution_role", names.AttrARN),
+					acctest.CheckResourceAttrJMESPair(resourceName, "container_properties", "execution_role_arn", "aws_iam_role.ecs_task_execution_role", names.AttrARN),
 					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "fargatePlatformConfiguration.platformVersion", "LATEST"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(resourceRequirements)", "2"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resourceRequirements[?type=='VCPU'].value | [0]", "0.25"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resourceRequirements[?type=='MEMORY'].value | [0]", "512"),
+					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(resource_requirements)", "2"),
+					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resource_requirements[?type=='VCPU'].value | [0]", "0.25"),
+					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resource_requirements[?type=='MEMORY'].value | [0]", "512"),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
 					resource.TestCheckResourceAttr(resourceName, "platform_capabilities.#", "1"),
@@ -302,7 +288,7 @@ func TestAccBatchJobDefinition_PlatformCapabilitiesFargate_containerPropertiesDe
 
 func TestAccBatchJobDefinition_PlatformCapabilities_fargate(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -315,14 +301,14 @@ func TestAccBatchJobDefinition_PlatformCapabilities_fargate(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_capabilitiesFargate(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrJMESPair(resourceName, "container_properties", "executionRoleArn", "aws_iam_role.ecs_task_execution_role", names.AttrARN),
+					acctest.CheckResourceAttrJMESPair(resourceName, "container_properties", "execution_role_arn", "aws_iam_role.ecs_task_execution_role", names.AttrARN),
 					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "fargatePlatformConfiguration.platformVersion", "LATEST"),
 					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "networkConfiguration.assignPublicIp", "DISABLED"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(resourceRequirements)", "2"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resourceRequirements[?type=='VCPU'].value | [0]", "0.25"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resourceRequirements[?type=='MEMORY'].value | [0]", "512"),
+					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(resource_requirements)", "2"),
+					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resource_requirements[?type=='VCPU'].value | [0]", "0.25"),
+					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resource_requirements[?type=='MEMORY'].value | [0]", "512"),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
 					resource.TestCheckResourceAttr(resourceName, "platform_capabilities.#", "1"),
@@ -349,7 +335,7 @@ func TestAccBatchJobDefinition_PlatformCapabilities_fargate(t *testing.T) {
 
 func TestAccBatchJobDefinition_ContainerProperties_advanced(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	compare := awstypes.JobDefinition{
 		Parameters: map[string]string{
 			"param1": "val1",
@@ -401,8 +387,8 @@ func TestAccBatchJobDefinition_ContainerProperties_advanced(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, "val2", 1, 60),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
-					testAccCheckJobDefinitionAttributes(&jd, &compare),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
+					testAccCheckJobDefinitionAttributes(ctx, &compare),
 				),
 			},
 			{
@@ -416,42 +402,42 @@ func TestAccBatchJobDefinition_ContainerProperties_advanced(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, "val3", 1, 60),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "2"),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, "val3", 1, 60),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "2"),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, "val3", 3, 60),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "3"),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, "val3", 3, 60),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "3"),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, "val3", 3, 120),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "4"),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_containerPropertiesAdvancedUpdate(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					testAccCheckJobDefinitionPreviousDeregistered(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "5"),
 				),
@@ -462,7 +448,7 @@ func TestAccBatchJobDefinition_ContainerProperties_advanced(t *testing.T) {
 
 func TestAccBatchJobDefinition_ContainerProperties_minorUpdate(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -475,14 +461,14 @@ func TestAccBatchJobDefinition_ContainerProperties_minorUpdate(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_containerProperties(rName, "-la"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:1`, rName))),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_containerProperties(rName, "-lah"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:2`, rName))),
 					testAccCheckJobDefinitionPreviousDeregistered(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "2"),
@@ -491,7 +477,7 @@ func TestAccBatchJobDefinition_ContainerProperties_minorUpdate(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_containerProperties(rName, "-hal"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:3`, rName))),
 					testAccCheckJobDefinitionPreviousDeregistered(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "3"),
@@ -503,7 +489,7 @@ func TestAccBatchJobDefinition_ContainerProperties_minorUpdate(t *testing.T) {
 
 func TestAccBatchJobDefinition_propagateTags(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -516,20 +502,14 @@ func TestAccBatchJobDefinition_propagateTags(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_propagateTags(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrEquivalentJSON(resourceName, "container_properties", `{
-						"command": ["echo", "test"],
-						"image": "busybox",
-						"memory": 128,
-						"vcpus": 1,
-						"environment": [],
-						"mountPoints": [],
-						"resourceRequirements": [],
-						"secrets": [],
-						"ulimits": [],
-						"volumes": []
-						}`),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.0", "echo"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.resource_requirements.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.mount_points.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.ulimits.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.volumes.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
 					resource.TestCheckResourceAttr(resourceName, "platform_capabilities.#", "0"),
@@ -547,7 +527,7 @@ func TestAccBatchJobDefinition_propagateTags(t *testing.T) {
 
 func TestAccBatchJobDefinition_ContainerProperties_EmptyField(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -563,7 +543,7 @@ func TestAccBatchJobDefinition_ContainerProperties_EmptyField(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_containerProperties_emptyField(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(environment)", "1"),
 					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "environment[?name=='VALUE'].value | [0]", names.AttrValue),
 				),
@@ -582,7 +562,7 @@ func TestAccBatchJobDefinition_ContainerProperties_EmptyField(t *testing.T) {
 
 func TestAccBatchJobDefinition_NodeProperties_basic(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -595,46 +575,12 @@ func TestAccBatchJobDefinition_NodeProperties_basic(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_nodeProperties(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrEquivalentJSON(resourceName, "node_properties", `{
-						"mainNode": 0,
-						"nodeRangeProperties": [
-							{
-								"container": {
-									"command": ["ls","-la"],
-									"environment": [],
-									"image": "busybox",
-									"memory": 128,
-									"mountPoints": [],
-									"resourceRequirements": [],
-									"secrets": [],
-									"ulimits": [],
-									"vcpus": 1,
-									"volumes": []
-								},
-								"instanceTypes": [],
-								"targetNodes": "0:"
-							},
-							{
-								"container": {
-									"command": ["echo","test"],
-									"environment": [],
-									"image": "busybox",
-									"memory": 128,
-									"mountPoints": [],
-									"resourceRequirements": [],
-									"secrets": [],
-									"ulimits": [],
-									"vcpus": 1,
-									"volumes": []
-								},
-								"instanceTypes": [],
-								"targetNodes": "1:"
-							}
-						],
-						"numNodes": 2
-					}`),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.0.container.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.0.target_nodes", "0:"),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.1.target_nodes", "1:"),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
 					resource.TestCheckResourceAttr(resourceName, "platform_capabilities.#", "0"),
@@ -661,7 +607,7 @@ func TestAccBatchJobDefinition_NodeProperties_basic(t *testing.T) {
 
 func TestAccBatchJobDefinition_NodeProperties_advanced(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -674,46 +620,8 @@ func TestAccBatchJobDefinition_NodeProperties_advanced(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_nodePropertiesAdvanced(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrEquivalentJSON(resourceName, "node_properties", `{
-						"mainNode": 1,
-						"nodeRangeProperties": [
-							{
-								"container": {
-									"command": ["ls","-la"],
-									"environment": [{"name":"VARNAME","value":"VARVAL"}],
-									"image": "busybox",
-									"memory": 512,
-									"mountPoints": [{"containerPath":"/tmp","readOnly":false,"sourceVolume":"tmp"}],
-									"resourceRequirements": [],
-									"secrets": [],
-									"ulimits": [{"hardLimit":1024,"name":"nofile","softLimit":1024}],
-									"vcpus": 1,
-									"volumes": [{"host":{"sourcePath":"/tmp"},"name":"tmp"}]
-								},
-								"instanceTypes": [],
-								"targetNodes": "0:"
-							},
-							{
-								"container": {
-									"command": ["echo","test"],
-									"environment": [],
-									"image": "busybox",
-									"memory": 128,
-									"mountPoints": [],
-									"resourceRequirements": [],
-									"secrets": [],
-									"ulimits": [],
-									"vcpus":1,
-									"volumes": []
-								},
-								"instanceTypes": [],
-								"targetNodes": "1:"
-							}
-						],
-						"numNodes":4
-					}`),
 				),
 			},
 			{
@@ -727,46 +635,12 @@ func TestAccBatchJobDefinition_NodeProperties_advanced(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_nodePropertiesAdvancedUpdate(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrEquivalentJSON(resourceName, "node_properties", `{
-						"mainNode": 1,
-						"nodeRangeProperties": [
-							{
-								"container": {
-									"command": ["ls","-la"],
-									"environment": [],
-									"image": "busybox",
-									"memory": 512,
-									"mountPoints": [],
-									"resourceRequirements": [],
-									"secrets": [],
-									"ulimits": [],
-									"vcpus": 1,
-									"volumes": []
-								},
-								"instanceTypes": [],
-								"targetNodes": "0:"
-							},
-							{
-								"container": {
-									"command": ["echo","test"],
-									"environment": [],
-									"image": "busybox",
-									"memory": 128,
-									"mountPoints": [],
-									"resourceRequirements": [],
-									"secrets": [],
-									"ulimits": [],
-									"vcpus": 1,
-									"volumes": []
-								},
-								"instanceTypes": [],
-								"targetNodes": "1:"
-							}
-						],
-						"numNodes":4
-					}`),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.0.container.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.0.target_nodes", "0:"),
+					resource.TestCheckResourceAttr(resourceName, "node_range_properties.1.target_nodes", "1:"),
 					testAccCheckJobDefinitionPreviousDeregistered(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "2"),
 				),
@@ -777,7 +651,6 @@ func TestAccBatchJobDefinition_NodeProperties_advanced(t *testing.T) {
 
 func TestAccBatchJobDefinition_NodeProperties_withEKS(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -790,7 +663,7 @@ func TestAccBatchJobDefinition_NodeProperties_withEKS(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_nodePropertiesEKS(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
 					acctest.CheckResourceAttrEquivalentJSON(resourceName, "node_properties", `{
 						"mainNode": 0,
@@ -844,7 +717,6 @@ func TestAccBatchJobDefinition_NodeProperties_withEKS(t *testing.T) {
 
 func TestAccBatchJobDefinition_NodeProperties_withECS(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -857,7 +729,7 @@ func TestAccBatchJobDefinition_NodeProperties_withECS(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_nodePropertiesECS(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
 				),
 			},
@@ -874,7 +746,7 @@ func TestAccBatchJobDefinition_NodeProperties_withECS(t *testing.T) {
 }
 func TestAccBatchJobDefinition_EKSProperties_basic(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -887,11 +759,11 @@ func TestAccBatchJobDefinition_EKSProperties_basic(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_EKSProperties_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.init_containers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0..#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.0.image_pull_policy", ""),
-					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.init_containers.0.image_pull_policy", ""),
+					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0..0.image_pull_policy", ""),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, names.AttrType, "container"),
 				),
@@ -910,7 +782,7 @@ func TestAccBatchJobDefinition_EKSProperties_basic(t *testing.T) {
 
 func TestAccBatchJobDefinition_EKSProperties_update(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -923,13 +795,13 @@ func TestAccBatchJobDefinition_EKSProperties_update(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_EKSProperties_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_EKSProperties_advancedUpdate(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.0.image_pull_policy", "Always"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.volumes.0.name", "tmp"),
@@ -951,7 +823,7 @@ func TestAccBatchJobDefinition_EKSProperties_update(t *testing.T) {
 
 func TestAccBatchJobDefinition_EKSProperties_imagePullSecrets(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -964,7 +836,7 @@ func TestAccBatchJobDefinition_EKSProperties_imagePullSecrets(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_EKSProperties_imagePullSecrets(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.0.image_pull_policy", ""),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
@@ -992,7 +864,7 @@ func TestAccBatchJobDefinition_EKSProperties_imagePullSecrets(t *testing.T) {
 
 func TestAccBatchJobDefinition_EKSProperties_multiContainers(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -1005,7 +877,7 @@ func TestAccBatchJobDefinition_EKSProperties_multiContainers(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_EKSProperties_multiContainer(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.#", "2"),
 				),
 			},
@@ -1059,7 +931,7 @@ func TestAccBatchJobDefinition_createTypeMultiNodeWithContainerProperties(t *tes
 
 func TestAccBatchJobDefinition_schedulingPriority(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -1072,7 +944,7 @@ func TestAccBatchJobDefinition_schedulingPriority(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_schedulingPriority(rName, 2),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "scheduling_priority", "2"),
 				),
 			},
@@ -1090,7 +962,7 @@ func TestAccBatchJobDefinition_schedulingPriority(t *testing.T) {
 
 func TestAccBatchJobDefinition_emptyRetryStrategy(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -1103,7 +975,7 @@ func TestAccBatchJobDefinition_emptyRetryStrategy(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_emptyRetryStrategy(rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
 				),
 				ExpectNonEmptyPlan: true,
@@ -1114,7 +986,7 @@ func TestAccBatchJobDefinition_emptyRetryStrategy(t *testing.T) {
 
 func TestAccBatchJobDefinition_ECSProperties_update(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -1127,7 +999,7 @@ func TestAccBatchJobDefinition_ECSProperties_update(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_ECSProperties_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "ecs_properties"),
 					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties)", "1"),
 					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties[0].containers)", "2"),
@@ -1137,7 +1009,7 @@ func TestAccBatchJobDefinition_ECSProperties_update(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_ECSProperties_updated(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "ecs_properties"),
 					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties)", "1"),
 					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties[0].containers)", "2"),
@@ -1150,7 +1022,7 @@ func TestAccBatchJobDefinition_ECSProperties_update(t *testing.T) {
 
 func TestAccBatchJobDefinition_updateWithTags(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jd awstypes.JobDefinition
+
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	resourceName := "aws_batch_job_definition.test"
 
@@ -1177,7 +1049,7 @@ func TestAccBatchJobDefinition_updateWithTags(t *testing.T) {
 					})),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 				),
 			},
 			// Ensure that tags are put on the new revision.
@@ -1199,14 +1071,14 @@ func TestAccBatchJobDefinition_updateWithTags(t *testing.T) {
 					})),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName, &jd),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckJobDefinitionExists(ctx context.Context, n string, v *awstypes.JobDefinition) resource.TestCheckFunc {
+func testAccCheckJobDefinitionExists(ctx context.Context, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -1215,13 +1087,11 @@ func testAccCheckJobDefinitionExists(ctx context.Context, n string, v *awstypes.
 
 		conn := acctest.Provider.Meta().(*conns.AWSClient).BatchClient(ctx)
 
-		output, err := tfbatch.FindJobDefinitionByARN(ctx, conn, rs.Primary.ID)
+		_, err := tfbatch.FindJobDefinitionByARN(ctx, conn, rs.Primary.ID)
 
 		if err != nil {
 			return err
 		}
-
-		*v = *output
 
 		return nil
 	}
@@ -1291,11 +1161,17 @@ func parseJobDefinitionPreviousARN(currentARN string) (previousARN string) {
 	return previousARN
 }
 
-func testAccCheckJobDefinitionAttributes(jd *awstypes.JobDefinition, compare *awstypes.JobDefinition) resource.TestCheckFunc {
+func testAccCheckJobDefinitionAttributes(ctx context.Context, compare *awstypes.JobDefinition) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "aws_batch_job_definition" {
 				continue
+			}
+			conn := acctest.Provider.Meta().(*conns.AWSClient).BatchClient(ctx)
+			jd, err := tfbatch.FindJobDefinitionByARN(ctx, conn, rs.Primary.ID)
+
+			if err != nil {
+				return err
 			}
 			if aws.ToString(jd.JobDefinitionArn) != rs.Primary.Attributes[names.AttrARN] {
 				return fmt.Errorf("Bad Job Definition ARN\n\t expected: %s\n\tgot: %s\n", rs.Primary.Attributes[names.AttrARN], aws.ToString(jd.JobDefinitionArn))
@@ -1351,12 +1227,12 @@ func testAccCheckJobDefinitionDestroy(ctx context.Context) resource.TestCheckFun
 func testAccJobDefinitionConfig_basic(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
   name = %[1]q
   type = "container"
 }
@@ -1368,10 +1244,12 @@ func testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, param string,
 resource "aws_batch_job_definition" "test" {
   name = %[1]q
   type = "container"
+
   parameters = {
     param1 = "val1"
     param2 = %[2]q
   }
+
   retry_strategy {
     attempts = %[3]d
     evaluate_on_exit {
@@ -1383,42 +1261,41 @@ resource "aws_batch_job_definition" "test" {
       on_reason = "*"
     }
   }
+
   timeout {
     attempt_duration_seconds = %[4]d
   }
-  container_properties = <<CONTAINER_PROPERTIES
-{
-    "command": ["ls", "-la"],
-    "image": "busybox",
-    "memory": 512,
-    "vcpus": 1,
-    "volumes": [
-      {
-        "host": {
-          "sourcePath": "/tmp"
-        },
-        "name": "tmp"
+
+  container_properties {
+    command = ["ls", "-la"]
+    image   = "busybox"
+    memory  = 512
+    vcpus   = 1
+
+    volumes {
+      host {
+        source_path = "/tmp"
       }
-    ],
-    "environment": [
-        {"name": "VARNAME", "value": "VARVAL"}
-    ],
-    "mountPoints": [
-        {
-          "sourceVolume": "tmp",
-          "containerPath": "/tmp",
-          "readOnly": false
-        }
-    ],
-    "ulimits": [
-      {
-        "hardLimit": 1024,
-        "name": "nofile",
-        "softLimit": 1024
-      }
-    ]
-}
-CONTAINER_PROPERTIES
+      name = "tmp"
+    }
+
+    environment {
+      name  = "VARNAME"
+      value = "VARVAL"
+    }
+
+    mount_points {
+      source_volume  = "tmp"
+      container_path = "/tmp"
+      read_only      = false
+    }
+
+    ulimits {
+      hard_limit = 1024
+      soft_limit = 1024
+      name       = "nofile"
+    }
+  }
 }
 `, rName, param, retries, timeout)
 }
@@ -1426,41 +1303,37 @@ CONTAINER_PROPERTIES
 func testAccJobDefinitionConfig_containerPropertiesAdvancedUpdate(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
-  name                 = %[1]q
-  type                 = "container"
-  container_properties = <<CONTAINER_PROPERTIES
-{
-    "command": ["ls", "-la"],
-    "image": "busybox",
-    "memory": 1024,
-    "vcpus": 1,
-    "volumes": [
-      {
-        "host": {
-          "sourcePath": "/tmp"
-        },
-        "name": "tmp"
+  name = %[1]q
+  type = "container"
+  container_properties {
+    command = ["ls", "-la"]
+    image   = "busybox"
+    memory  = 1024
+    vcpus   = 1
+    volumes {
+      host {
+        source_path = "/tmp"
       }
-    ],
-    "environment": [
-        {"name": "VARNAME", "value": "VARVAL"}
-    ],
-    "mountPoints": [
-        {
-          "sourceVolume": "tmp",
-          "containerPath": "/tmp",
-          "readOnly": false
-        }
-    ],
-    "ulimits": [
-      {
-        "hardLimit": 1024,
-        "name": "nofile",
-        "softLimit": 1024
-      }
-    ]
-}
-CONTAINER_PROPERTIES
+      name = "tmp"
+    }
+
+    environment {
+      name  = "VARNAME"
+      value = "VARVAL"
+    }
+    mount_points {
+      source_volume  = "tmp"
+      container_path = "/tmp"
+      read_only      = false
+    }
+
+    ulimits {
+      hard_limit = 1024
+      name       = "nofile"
+      soft_limit = 1024
+    }
+  }
+
 }
 `, rName)
 }
@@ -1586,53 +1459,42 @@ resource "aws_lambda_function" "test" {
 resource "aws_batch_job_definition" "test" {
   name = %[1]q
   type = "container"
-  container_properties = jsonencode({
-    command = ["ls", "%[2]s"],
+  container_properties {
+    command = ["ls", "%[2]s"]
     image   = "busybox"
+    resource_requirements {
+      type  = "MEMORY"
+      value = "512"
+    }
+    resource_requirements {
+      type  = "VCPU"
+      value = "1"
+    }
 
-    resourceRequirements = [
-      {
-        type  = "VCPU"
-        value = "1"
-      },
-      {
-        type  = "MEMORY"
-        value = "512"
+    volumes {
+      name = "tmp"
+      host {
+        source_path = "/tmp"
       }
-    ]
+    }
 
-    volumes = [
-      {
-        host = {
-          sourcePath = "/tmp"
-        }
-        name = "tmp"
-      }
-    ]
+    environment {
+      name  = "VARNAME"
+      value = "VARVAL"
+    }
 
-    environment = [
-      {
-        name  = "VARNAME"
-        value = "VARVAL"
-      }
-    ]
+    mount_points {
+      source_volume  = "tmp"
+      container_path = "/tmp"
+      read_only      = false
+    }
 
-    mountPoints = [
-      {
-        sourceVolume  = "tmp"
-        containerPath = "/tmp"
-        readOnly      = false
-      }
-    ]
-
-    ulimits = [
-      {
-        hardLimit = 1024
-        name      = "nofile"
-        softLimit = 1024
-      }
-    ]
-  })
+    ulimits {
+      hard_limit = 1024
+      name       = "nofile"
+      soft_limit = 1024
+    }
+  }
 }
 `, rName, subcommand))
 }
@@ -1647,12 +1509,12 @@ resource "aws_batch_job_definition" "test" {
     "EC2",
   ]
 
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
 }
 `, rName)
 }
@@ -1690,16 +1552,18 @@ resource "aws_batch_job_definition" "test" {
     "FARGATE",
   ]
 
-  container_properties = <<CONTAINER_PROPERTIES
-{
-  "image": "busybox",
-  "resourceRequirements": [
-    {"type": "MEMORY", "value": "512"},
-    {"type": "VCPU", "value": "0.25"}
-  ],
-  "executionRoleArn": "${aws_iam_role.ecs_task_execution_role.arn}"
-}
-CONTAINER_PROPERTIES
+  container_properties {
+    image = "busybox"
+    resource_requirements {
+      type  = "MEMORY"
+      value = "512"
+    }
+    resource_requirements {
+      type  = "VCPU"
+      value = "0.25"
+    }
+    execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  }
 }
 `, rName)
 }
@@ -1737,23 +1601,26 @@ resource "aws_batch_job_definition" "test" {
     "FARGATE",
   ]
 
-  container_properties = <<CONTAINER_PROPERTIES
-{
-  "command": ["echo", "test"],
-  "image": "busybox",
-  "fargatePlatformConfiguration": {
-    "platformVersion": "LATEST"
-  },
-  "networkConfiguration": {
-    "assignPublicIp": "DISABLED"
-  },
-  "resourceRequirements": [
-    {"type": "VCPU", "value": "0.25"},
-    {"type": "MEMORY", "value": "512"}
-  ],
-  "executionRoleArn": "${aws_iam_role.ecs_task_execution_role.arn}"
-}
-CONTAINER_PROPERTIES
+  container_properties {
+    command = ["echo", "test"]
+    image   = "busybox"
+    fargate_platform_configuration {
+      platform_version = "LATEST"
+    }
+    network_configuration {
+      assign_public_ip = false
+    }
+    resource_requirements {
+      type  = "MEMORY"
+      value = "512"
+    }
+    resource_requirements {
+      type  = "VCPU"
+      value = "0.25"
+    }
+    execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  }
+
 }
 `, rName)
 }
@@ -1761,12 +1628,12 @@ CONTAINER_PROPERTIES
 func testAccJobDefinitionConfig_propagateTags(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
   name = %[1]q
   type = "container"
 
@@ -1778,22 +1645,21 @@ resource "aws_batch_job_definition" "test" {
 func testAccJobDefinitionConfig_containerProperties_emptyField(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-    environment = [
-      {
-        name  = "EMPTY"
-        value = ""
-      },
-      {
-        name  = "VALUE"
-        value = "value"
-      }
-    ]
-  })
+    environment {
+      name  = "EMPTY"
+      value = ""
+    }
+
+    environment {
+      name  = "VALUE"
+      value = "value"
+    }
+  }
   name = %[1]q
   type = "container"
 }
@@ -1806,30 +1672,28 @@ resource "aws_batch_job_definition" "test" {
   name = %[1]q
   type = "multinode"
 
-  node_properties = jsonencode({
-    mainNode = 0
-    nodeRangeProperties = [
-      {
-        container = {
-          command = ["ls", "-la"]
-          image   = "busybox"
-          memory  = 128
-          vcpus   = 1
-        }
-        targetNodes = "0:"
-      },
-      {
-        container = {
-          command = ["echo", "test"]
-          image   = "busybox"
-          memory  = 128
-          vcpus   = 1
-        }
-        targetNodes = "1:"
+  node_properties {
+    main_node = 0
+    node_range_properties {
+      container {
+        command = ["ls", "-la"]
+        image   = "busybox"
+        memory  = 128
+        vcpus   = 1
       }
-    ]
-    numNodes = 2
-  })
+      target_nodes = "0:"
+    }
+    node_range_properties {
+      container {
+        command = ["echo", "test"]
+        image   = "busybox"
+        memory  = 128
+        vcpus   = 1
+      }
+      target_nodes = "1:"
+    }
+    num_nodes = 2
+  }
 }
 `, rName)
 }
@@ -1847,61 +1711,51 @@ resource "aws_batch_job_definition" "test" {
     attempt_duration_seconds = 60
   }
 
-  node_properties = jsonencode({
-    mainNode = 1
-    nodeRangeProperties = [
-      {
-        container = {
-          "command" : ["ls", "-la"],
-          "image" : "busybox",
-          "memory" : 512,
-          "vcpus" : 1,
-          "volumes" : [
-            {
-              "host" : {
-                "sourcePath" : "/tmp"
-              },
-              "name" : "tmp"
-            }
-          ],
-          "environment" : [
-            { "name" : "VARNAME", "value" : "VARVAL" }
-          ],
-          "mountPoints" : [
-            {
-              "sourceVolume" : "tmp",
-              "containerPath" : "/tmp",
-              "readOnly" : false
-            }
-          ],
-          "ulimits" : [
-            {
-              "hardLimit" : 1024,
-              "name" : "nofile",
-              "softLimit" : 1024
-            }
-          ]
+  node_properties {
+    main_node = 1
+    num_nodes = 4
+    node_range_properties {
+      target_nodes = "0:"
+      container {
+        command = ["ls", "-la"]
+        image   = "busybox"
+        memory  = 512
+        vcpus   = 1
+        volumes {
+          host {
+            source_path = "/tmp"
+          }
+          name = "tmp"
         }
-        targetNodes = "0:"
-      },
-      {
-        container = {
-          command              = ["echo", "test"]
-          environment          = []
-          image                = "busybox"
-          memory               = 128
-          mountPoints          = []
-          resourceRequirements = []
-          secrets              = []
-          ulimits              = []
-          vcpus                = 1
-          volumes              = []
+
+        environment {
+          name  = "VARNAME"
+          value = "VARVAL"
         }
-        targetNodes = "1:"
+        mount_points {
+          source_volume  = "tmp"
+          container_path = "/tmp"
+          read_only      = false
+        }
+
+        ulimits {
+          hard_limit = 1024
+          name       = "nofile"
+          soft_limit = 1024
+        }
       }
-    ]
-    numNodes = 4
-  })
+    }
+
+    node_range_properties {
+      target_nodes = "1:"
+      container {
+        command = ["echo", "test"]
+        image   = "busybox"
+        memory  = 128
+        vcpus   = 1
+      }
+    }
+  }
 }
 `, rName)
 }
@@ -1919,38 +1773,34 @@ resource "aws_batch_job_definition" "test" {
     attempt_duration_seconds = 60
   }
 
-  node_properties = jsonencode({
-    mainNode = 1
-    nodeRangeProperties = [
-      {
-        container = {
-          "command" : ["ls", "-la"],
-          "image" : "busybox",
-          "memory" : 512,
-          "vcpus" : 1
-        }
-        targetNodes = "0:"
-      },
-      {
-        container = {
-          command     = ["echo", "test"]
-          environment = []
-          image       = "busybox"
-          memory      = 128
-          mountPoints = []
-          ulimits     = []
-          vcpus       = 1
-          volumes     = []
-        }
-        targetNodes = "1:"
+  node_properties {
+    main_node = 1
+    node_range_properties {
+      container {
+        command = ["ls", "-la"]
+        image   = "busybox"
+        memory  = 512
+        vcpus   = 1
       }
-    ]
-    numNodes = 4
-  })
+      target_nodes = "0:"
+    }
+
+
+    node_range_properties {
+      container {
+        command = ["echo", "test"]
+        image   = "busybox"
+        memory  = 128
+        vcpus   = 1
+      }
+      target_nodes = "1:"
+    }
+
+    num_nodes = 4
+  }
 }
 `, rName)
 }
-
 func testAccJobDefinitionConfig_EKSProperties_basic(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
@@ -2020,10 +1870,10 @@ resource "aws_batch_job_definition" "test" {
           }
         }
       }
-      image_pull_secret {
+      image_pull_secrets {
         name = "chihiro"
       }
-      image_pull_secret {
+      image_pull_secrets {
         name = "haku"
       }
       metadata {
@@ -2074,10 +1924,10 @@ resource "aws_batch_job_definition" "test" {
           }
         }
       }
-      image_pull_secret {
+      image_pull_secrets {
         name = "chihiro"
       }
-      image_pull_secret {
+      image_pull_secrets {
         name = "haku"
       }
       metadata {
@@ -2177,34 +2027,28 @@ resource "aws_batch_job_definition" "test" {
     attempt_duration_seconds = 60
   }
 
-  node_properties = jsonencode({
-    mainNode = 1
-    nodeRangeProperties = [
-      {
-        container = {
-          "command" : ["ls", "-la"],
-          "image" : "busybox",
-          "memory" : 512,
-          "vcpus" : 1
-        }
-        targetNodes = "0:"
-      },
-      {
-        container = {
-          command     = ["echo", "test"]
-          environment = []
-          image       = "busybox"
-          memory      = 128
-          mountPoints = []
-          ulimits     = []
-          vcpus       = 1
-          volumes     = []
-        }
-        targetNodes = "1:"
+  node_properties {
+    main_node = 1
+    node_range_properties {
+      container {
+        command = ["ls", "-la"]
+        image   = "busybox"
+        memory  = 512
+        vcpus   = 1
       }
-    ]
-    numNodes = 4
-  })
+      target_nodes = "0:"
+    }
+    node_range_properties {
+      container {
+        command = ["echo", "test"]
+        image   = "busybox"
+        memory  = 128
+        vcpus   = 1
+      }
+      target_nodes = "1:"
+    }
+    num_nodes = 4
+  }
 }
 `, rName)
 }
@@ -2222,12 +2066,12 @@ resource "aws_batch_job_definition" "test" {
     attempt_duration_seconds = 60
   }
 
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
 }
 `, rName)
 }
@@ -2235,12 +2079,12 @@ resource "aws_batch_job_definition" "test" {
 func testAccJobDefinitionConfig_schedulingPriority(rName string, priority int) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
   name                = %[1]q
   type                = "container"
   scheduling_priority = %[2]d
@@ -2255,12 +2099,12 @@ resource "aws_batch_job_definition" "test" {
   type                = "container"
   scheduling_priority = %[2]d
   propagate_tags      = %[3]t
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
   retry_strategy {
     attempts = %[4]d
   }
@@ -2280,12 +2124,12 @@ func testAccJobDefinitionConfig_emptyRetryStrategy(rName string) string {
 resource "aws_batch_job_definition" "test" {
   name = %[1]q
   type = "container"
-  container_properties = jsonencode({
+  container_properties {
     command = ["echo", "test"]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
   retry_strategy {
   }
 }
@@ -2323,75 +2167,64 @@ resource "aws_batch_job_definition" "test" {
 
   platform_capabilities = ["FARGATE"]
 
-  ecs_properties = jsonencode({
-    taskProperties = [
-      {
-        executionRoleArn = aws_iam_role.ecs_task_execution_role.arn
-        containers = [
-          {
-            image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
-            command = ["sleep", "60"]
-            dependsOn = [
-              {
-                containerName = "container_b"
-                condition     = "COMPLETE"
-              }
-            ]
-            secrets = [
-              {
-                name      = "TEST"
-                valueFrom = "DUMMY"
-              }
-            ]
-            environment = [
-              {
-                name  = "test"
-                value = "Environment Variable"
-              }
-            ]
-            essential = true
-            logConfiguration = {
-              logDriver = "awslogs"
-              options = {
-                "awslogs-group"         = %[1]q
-                "awslogs-region"        = %[2]q
-                "awslogs-stream-prefix" = "ecs"
-              }
-            }
-            name                   = "container_a"
-            privileged             = false
-            readonlyRootFilesystem = false
-            resourceRequirements = [
-              {
-                value = "1.0"
-                type  = "VCPU"
-              },
-              {
-                value = "2048"
-                type  = "MEMORY"
-              }
-            ]
-          },
-          {
-            image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
-            command   = ["sleep", "360"]
-            name      = "container_b"
-            essential = false
-            resourceRequirements = [
-              {
-                value = "1.0"
-                type  = "VCPU"
-              },
-              {
-                value = "2048"
-                type  = "MEMORY"
-              }
-            ]
+  ecs_properties {
+    task_properties {
+      execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+      containers {
+        image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
+        command = ["sleep", "60"]
+        depends_on {
+          container_name = "container_b"
+          condition      = "COMPLETE"
+        }
+
+        secrets {
+          name       = "TEST"
+          value_from = "DUMMY"
+        }
+
+        environment {
+          name  = "test 1"
+          value = "Environment Variable 1"
+        }
+
+        essential = true
+        log_configuration {
+          log_driver = "awslogs"
+          options = {
+            "awslogs-group"         = %[1]q
+            "awslogs-region"        = %[2]q
+            "awslogs-stream-prefix" = "ecs"
           }
-        ]
+        }
+        name                     = "container_a"
+        privileged               = false
+        readonly_root_filesystem = false
+        resource_requirements {
+          value = "1.0"
+          type  = "VCPU"
+        }
+        resource_requirements {
+          value = "2048"
+          type  = "MEMORY"
+        }
       }
-    ]
-  })
+      containers {
+        image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
+        command   = ["sleep", "360"]
+        name      = "container_b"
+        essential = false
+        resource_requirements {
+          value = "1.0"
+          type  = "VCPU"
+        }
+        resource_requirements {
+          value = "2048"
+          type  = "MEMORY"
+        }
+      }
+    }
+  }
 }
 `, rName, acctest.Region())
 }
@@ -2427,79 +2260,77 @@ resource "aws_batch_job_definition" "test" {
 
   platform_capabilities = ["FARGATE"]
 
-  ecs_properties = jsonencode({
-    taskProperties = [
-      {
-        executionRoleArn = aws_iam_role.ecs_task_execution_role.arn
-        containers = [
-          {
-            image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
-            command = ["sleep", "60"]
-            dependsOn = [
-              {
-                containerName = "container_b"
-                condition     = "COMPLETE"
-              }
-            ]
-            secrets = [
-              {
-                name      = "TEST"
-                valueFrom = "DUMMY"
-              }
-            ]
-            environment = [
-              {
-                name  = "test 1"
-                value = "Environment Variable 1"
-              },
-              {
-                name  = "test 2"
-                value = "Environment Variable 2"
-              }
-            ]
-            essential = true
-            logConfiguration = {
-              logDriver = "awslogs"
-              options = {
-                "awslogs-group"         = %[1]q
-                "awslogs-region"        = %[2]q
-                "awslogs-stream-prefix" = "ecs"
-              }
-            }
-            name                   = "container_a"
-            privileged             = false
-            readonlyRootFilesystem = false
-            resourceRequirements = [
-              {
-                value = "1.0"
-                type  = "VCPU"
-              },
-              {
-                value = "2048"
-                type  = "MEMORY"
-              }
-            ]
-          },
-          {
-            image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
-            command   = ["sleep", "360"]
-            name      = "container_b"
-            essential = false
-            resourceRequirements = [
-              {
-                value = "1.0"
-                type  = "VCPU"
-              },
-              {
-                value = "2048"
-                type  = "MEMORY"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  })
+  ecs_properties {
+    task_properties {
+	execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+	containers = [
+		{
+		image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
+		command = ["sleep", "60"]
+		dependsOn = [
+			{
+			containerName = "container_b"
+			condition     = "COMPLETE"
+			}
+		]
+		secrets = [
+			{
+			name      = "TEST"
+			valueFrom = "DUMMY"
+			}
+		]
+		environment = [
+			{
+			name  = "test 1"
+			value = "Environment Variable 1"
+			},
+			{
+			name  = "test 2"
+			value = "Environment Variable 2"
+			}
+		]
+		essential = true
+		log_configuration {
+			logDriver = "awslogs"
+			options = {
+			"awslogs-group"         = %[1]q
+			"awslogs-region"        = %[2]q
+			"awslogs-stream-prefix" = "ecs"
+			}
+		}
+		name                   = "container_a"
+		privileged             = false
+		readonlyRootFilesystem = false
+		resource_requirements = [
+			{
+			value = "1.0"
+			type  = "VCPU"
+			},
+			{
+			value = "2048"
+			type  = "MEMORY"
+			}
+		]
+		},
+		{
+		image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
+		command   = ["sleep", "360"]
+		name      = "container_b"
+		essential = false
+		resource_requirements = [
+			{
+			value = "1.0"
+			type  = "VCPU"
+			},
+			{
+			value = "2048"
+			type  = "MEMORY"
+			}
+		]
+		}
+	]
+	}
+  }
 }
 `, rName, acctest.Region())
 }
@@ -2507,12 +2338,12 @@ resource "aws_batch_job_definition" "test" {
 func testAccJobDefinitionConfig_simpleWithTags(rName, command1, command2 string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
-  container_properties = jsonencode({
+  container_properties {
     command = [%[2]q, %[3]q]
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  })
+  }
   name = %[1]q
   type = "container"
 
