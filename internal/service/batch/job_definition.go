@@ -23,7 +23,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -858,8 +857,14 @@ func (r *resourceJobDefinition) SchemaEKSProperties(ctx context.Context) schema.
 func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			names.AttrARN: framework.ARNAttributeComputedOnly(),
-			names.AttrID:  framework.IDAttribute(),
+			names.AttrARN: schema.StringAttribute{
+				Computed: true,
+			},
+			// The ID includes the batch job definition version, and so it updates everytime
+			// As a result we can't use framework.IDAttribute() do the plan modifier UseStateForUnknown
+			names.AttrID: schema.StringAttribute{
+				Computed: true,
+			},
 			"arn_prefix": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
@@ -868,7 +873,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 			},
 
 			"deregister_on_new_revision": schema.BoolAttribute{
-				Default:  booldefault.StaticBool(false),
+				Default:  booldefault.StaticBool(true),
 				Optional: true,
 				Computed: true,
 			},
@@ -911,9 +916,6 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"revision": schema.Int32Attribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.Int32{
-					int32planmodifier.UseStateForUnknown(),
-				},
 			},
 			"scheduling_priority": schema.Int32Attribute{
 				Optional: true,
@@ -1232,12 +1234,12 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 		)
 		return
 	}
-	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &state)...)
+	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &plan)...)
 
 	if plan.DeregisterOnNewRevision.ValueBool() {
-		tflog.Debug(ctx, fmt.Sprintf("[DEBUG] Deleting previous Batch Job Definition: %s", *out.JobDefinitionArn))
+		tflog.Debug(ctx, fmt.Sprintf("[DEBUG] Deleting previous Batch Job Definition: %s", state.ID.ValueString()))
 		_, err := conn.DeregisterJobDefinition(ctx, &batch.DeregisterJobDefinitionInput{
-			JobDefinition: out.JobDefinitionArn,
+			JobDefinition: state.ID.ValueStringPointer(),
 		})
 
 		if err != nil {
@@ -1249,7 +1251,7 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *resourceJobDefinition) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
