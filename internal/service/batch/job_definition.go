@@ -1110,11 +1110,7 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 	// flex.WithIgnoredFieldNamesAppend("Type"),
 	// // Name and Arn are prefixed by JobDefinition
 	// flex.WithFieldNamePrefix("JobDefinition"),
-	resp.Diagnostics.Append(flex.Expand(ctx, plan, input,
-		flex.WithIgnoredFieldNamesAppend("Arn"),
-		flex.WithIgnoredFieldNamesAppend("Name"), // JobDefinitionName is a separate field
-		flex.WithIgnoredFieldNamesAppend("Revision"),
-	)...)
+	resp.Diagnostics.Append(flex.Expand(ctx, plan, input)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
