@@ -172,7 +172,7 @@ func (d *jobDefinitionDataSource) Schema(ctx context.Context, request datasource
 				Computed:   true,
 				ElementType: types.ObjectType{
 					AttrTypes: map[string]attr.Type{
-						"attempts":         types.Int64Type,
+						"attempts":         types.Int32Type,
 						"evaluate_on_exit": fwtypes.NewListNestedObjectTypeOf[evaluateOnExitModel](ctx),
 					},
 				},
@@ -611,7 +611,7 @@ type mountPointModel struct {
 }
 
 type networkConfigurationModel struct {
-	AssignPublicIP types.Bool `tfsdk:"assign_public_ip"`
+	AssignPublicIP types.String `tfsdk:"assign_public_ip"`
 }
 
 type resourceRequirementModel struct {
@@ -654,7 +654,7 @@ type hostModel struct {
 }
 
 type retryStrategyModel struct {
-	Attempts       types.Int64                                          `tfsdk:"attempts"`
+	Attempts       types.Int32                                          `tfsdk:"attempts"`
 	EvaluateOnExit fwtypes.ListNestedObjectValueOf[evaluateOnExitModel] `tfsdk:"evaluate_on_exit"`
 }
 

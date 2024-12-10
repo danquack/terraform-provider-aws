@@ -1608,7 +1608,7 @@ resource "aws_batch_job_definition" "test" {
       platform_version = "LATEST"
     }
     network_configuration {
-      assign_public_ip = false
+      assign_public_ip = "DISABLED"
     }
     resource_requirements {
       type  = "MEMORY"
@@ -2129,8 +2129,6 @@ resource "aws_batch_job_definition" "test" {
     image   = "busybox"
     memory  = 128
     vcpus   = 1
-  }
-  retry_strategy {
   }
 }
 `, rName)

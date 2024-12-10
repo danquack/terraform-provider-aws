@@ -22,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -222,11 +221,11 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 				CustomType: fwtypes.NewListNestedObjectTypeOf[networkConfigurationModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"assign_public_ip": schema.BoolAttribute{
+						"assign_public_ip": schema.StringAttribute{
 							Optional: true,
 							Computed: true,
-							PlanModifiers: []planmodifier.Bool{
-								boolplanmodifier.UseStateForUnknown(),
+							Validators: []validator.String{
+								enum.FrameworkValidate[awstypes.AssignPublicIp](),
 							},
 						},
 					},
@@ -468,6 +467,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 							Optional: true,
 						},
 						"platform_version": schema.StringAttribute{
+							Computed: true,
 							Optional: true,
 						},
 						"task_role_arn": schema.StringAttribute{
@@ -687,8 +687,11 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 							CustomType: fwtypes.NewListNestedObjectTypeOf[networkConfigurationModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"assign_public_ip": schema.BoolAttribute{
+									"assign_public_ip": schema.StringAttribute{
 										Optional: true,
+										Validators: []validator.String{
+											enum.FrameworkValidate[awstypes.AssignPublicIp](),
+										},
 									},
 								},
 							},
@@ -1031,7 +1034,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				CustomType: fwtypes.NewListNestedObjectTypeOf[retryStrategyModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"attempts": schema.Int64Attribute{
+						"attempts": schema.Int32Attribute{
 							Optional: true,
 							Computed: true,
 						},
