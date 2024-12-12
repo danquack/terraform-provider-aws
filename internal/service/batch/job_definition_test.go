@@ -763,7 +763,6 @@ func TestAccBatchJobDefinition_EKSProperties_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0..#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.0.image_pull_policy", ""),
-					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0..0.image_pull_policy", ""),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, names.AttrType, "container"),
 				),
@@ -841,11 +840,11 @@ func TestAccBatchJobDefinition_EKSProperties_imagePullSecrets(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.0.image_pull_policy", ""),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, names.AttrType, "container"),
-					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.image_pull_secret.#", "2"),
-					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "eks_properties.*.pod_properties.*.image_pull_secret.*", map[string]string{
+					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.image_pull_secrets.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "eks_properties.0.pod_properties.0.image_pull_secrets.*", map[string]string{
 						names.AttrName: "chihiro",
 					}),
-					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "eks_properties.*.pod_properties.*.image_pull_secret.*", map[string]string{
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "eks_properties.0.pod_properties.0.image_pull_secrets.*", map[string]string{
 						names.AttrName: "haku",
 					}),
 				),
@@ -1969,11 +1968,11 @@ resource "aws_batch_job_definition" "test" {
           }
         }
         security_context {
-          privileged                 = true
-          read_only_root_file_system = true
-          run_as_group               = 1000
-          run_as_user                = 1000
-          run_as_non_root            = true
+          privileged                  = true
+          read_only_root_file_system  = true
+          run_as_group                = 1000
+          run_as_user                 = 1000
+          run_as_non_root             = true
         }
         volume_mounts {
           mount_path = "/tmp"

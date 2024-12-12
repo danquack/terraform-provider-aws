@@ -420,7 +420,7 @@ func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.N
 						"run_as_user": schema.Int64Attribute{
 							Optional: true,
 						},
-						"read_only_root_filesystem": schema.BoolAttribute{
+						"read_only_root_file_system": schema.BoolAttribute{
 							Optional: true,
 						},
 						"run_as_non_root": schema.BoolAttribute{
@@ -442,7 +442,7 @@ func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.N
 						"read_only": schema.BoolAttribute{
 							Optional: true,
 						},
-						"sub_path": schema.StringAttribute{
+						"name": schema.StringAttribute{
 							Optional: true,
 						},
 					},
@@ -842,12 +842,39 @@ func (r *resourceJobDefinition) SchemaEKSProperties(ctx context.Context) schema.
 								Blocks: map[string]schema.Block{
 									"empty_dir": schema.ListNestedBlock{
 										CustomType: fwtypes.NewListNestedObjectTypeOf[eksEmptyDirModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"medium": schema.StringAttribute{
+													Optional: true,
+												},
+												"size_limit": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
 									},
 									"host_path": schema.ListNestedBlock{
 										CustomType: fwtypes.NewListNestedObjectTypeOf[eksHostPathModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"path": schema.StringAttribute{
+													Optional: true,
+												},
+											},
+										},
 									},
 									"secret": schema.ListNestedBlock{
 										CustomType: fwtypes.NewListNestedObjectTypeOf[eksSecretModel](ctx),
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"secret_name": schema.StringAttribute{
+													Optional: true,
+												},
+												"optional": schema.BoolAttribute{
+													Optional: true,
+												},
+											},
+										},
 									},
 								},
 							},
