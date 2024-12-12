@@ -982,6 +982,8 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				NestedObject: r.SchemaEKSProperties(ctx),
 			},
 			"node_properties": schema.ListNestedBlock{
+				// see https://docs.aws.amazon.com/batch/latest/APIReference/API_RegisterJobDefinition.html#Batch-RegisterJobDefinition-request-nodeProperties
+				// see https://docs.aws.amazon.com/batch/latest/APIReference/API_NodeProperties.html
 				CustomType: fwtypes.NewListNestedObjectTypeOf[nodePropertiesModel](ctx),
 				Validators: []validator.List{
 					listvalidator.ExactlyOneOf(
@@ -1002,6 +1004,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 					},
 					Blocks: map[string]schema.Block{
 						"node_range_properties": schema.ListNestedBlock{
+							// see https://docs.aws.amazon.com/batch/latest/APIReference/API_NodeRangeProperty.html
 							CustomType: fwtypes.NewListNestedObjectTypeOf[nodeRangePropertyModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
@@ -1012,6 +1015,11 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 										Computed:    true,
 										Optional:    true,
 										ElementType: types.StringType,
+										Validators: []validator.List{
+											// https://docs.aws.amazon.com/batch/latest/APIReference/API_NodeRangeProperty.html#:~:text=this%20list%20object%20is%20currently%20limited%20to%20one%20element.
+											listvalidator.SizeAtLeast(1),
+											listvalidator.SizeAtMost(1),
+										},
 									},
 								},
 								Blocks: map[string]schema.Block{
