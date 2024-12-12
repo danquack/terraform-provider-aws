@@ -355,8 +355,10 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 
 func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.NestedBlockObject {
 	return schema.NestedBlockObject{
+		// see https://docs.aws.amazon.com/batch/latest/APIReference/API_EksContainer.html
 		Attributes: map[string]schema.Attribute{
 			"args": schema.ListAttribute{
+				Computed:    true,
 				Optional:    true,
 				ElementType: types.StringType,
 			},
@@ -968,7 +970,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				NestedObject: r.SchemaECSProperties(ctx),
 			},
 			"eks_properties": schema.ListNestedBlock{
-				CustomType: fwtypes.NewListNestedObjectTypeOf[eksPodPropertiesModel](ctx),
+				CustomType: fwtypes.NewListNestedObjectTypeOf[eksPropertiesModel](ctx),
 				Validators: []validator.List{
 					listvalidator.ExactlyOneOf(
 						path.MatchRoot("container_properties"),
@@ -1007,6 +1009,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 										Optional: true,
 									},
 									"instance_types": schema.ListAttribute{
+										Computed:    true,
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -1017,7 +1020,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 										NestedObject: r.SchemaContainer(ctx),
 									},
 									"eks_properties": schema.ListNestedBlock{
-										CustomType:   fwtypes.NewListNestedObjectTypeOf[eksPodPropertiesModel](ctx),
+										CustomType:   fwtypes.NewListNestedObjectTypeOf[eksPropertiesModel](ctx),
 										NestedObject: r.SchemaEKSProperties(ctx),
 									},
 									"ecs_properties": schema.ListNestedBlock{
@@ -1307,7 +1310,7 @@ type resourceJobDefinitionModel struct {
 	ContainerProperties     fwtypes.ListNestedObjectValueOf[containerPropertiesModel] `tfsdk:"container_properties"`
 	DeregisterOnNewRevision types.Bool                                                `tfsdk:"deregister_on_new_revision" autoflex:"-"`
 	ECSProperties           fwtypes.ListNestedObjectValueOf[ecsPropertiesModel]       `tfsdk:"ecs_properties"`
-	EKSProperties           fwtypes.ListNestedObjectValueOf[eksPodPropertiesModel]    `tfsdk:"eks_properties" autoflex:"noFlatten"`
+	EKSProperties           fwtypes.ListNestedObjectValueOf[eksPropertiesModel]       `tfsdk:"eks_properties"`
 	ID                      types.String                                              `tfsdk:"id" autoflex:"-"`
 	Name                    types.String                                              `tfsdk:"name"`
 	NodeProperties          fwtypes.ListNestedObjectValueOf[nodePropertiesModel]      `tfsdk:"node_properties"`
