@@ -97,7 +97,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"environment": schema.ListNestedBlock{
+			names.AttrEnvironment: schema.ListNestedBlock{
 				CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -520,7 +520,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 											},
 										},
 									},
-									"environment": schema.ListNestedBlock{
+									names.AttrEnvironment: schema.ListNestedBlock{
 										CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
@@ -1131,6 +1131,77 @@ func (r *resourceJobDefinition) readJobDefinitionIntoState(ctx context.Context, 
 	return resp
 }
 
+func warnAboutEmptyEnvVar(name, value *string, attributePath path.Path) (result diag.Diagnostic) {
+	if aws.ToString(value) == "" {
+		result = diag.NewAttributeWarningDiagnostic(attributePath,
+			"Ignoring environment variable",
+			fmt.Sprintf("The environment variable %q has an empty value, which is ignored by the Batch service", aws.ToString(name)))
+	}
+	return
+}
+
+func warnAboutEmptyEnvVars(envVars []awstypes.KeyValuePair, attributePath path.Path) (diagnostics diag.Diagnostics) {
+	for _, envVar := range envVars {
+		diagnostics.Append(warnAboutEmptyEnvVar(envVar.Name, envVar.Value, attributePath))
+	}
+	return diagnostics
+}
+
+func checkEnVarsSemanticallyEqual(input, output []awstypes.KeyValuePair) (semanticallyEqual bool) {
+	outputSet := make(map[string]string, len(input)) // expect len(input) values
+	for _, outputEnvVar := range output {
+		name := aws.ToString(outputEnvVar.Name)
+		value := aws.ToString(outputEnvVar.Value)
+		// assume that the API that returned the output env vars guarantees the output env vars
+		// have unique keys
+		outputSet[name] = value
+	}
+
+	semanticallyEqual = true
+	for _, inputEnvVar := range input {
+		name := aws.ToString(inputEnvVar.Name)
+		inputValue := aws.ToString(inputEnvVar.Value)
+		outputValue, envVarSet := outputSet[name]
+
+		if inputValue == "" {
+			// empty-valued env vars are ignored by the upstream API, so they should be missing
+			semanticallyEqual = !envVarSet
+		} else {
+			semanticallyEqual = envVarSet && inputValue == outputValue
+		}
+		if !semanticallyEqual {
+			return
+		}
+	}
+	return semanticallyEqual
+}
+
+// Ensure the env vars are in their original order and reinsert ignored empty env vars
+// if necessary.
+func fixEnvVars(input, output []awstypes.KeyValuePair) []awstypes.KeyValuePair {
+	if checkEnVarsSemanticallyEqual(input, output) {
+		return input
+	} else {
+		return output // let Terraform raise an inconsistency error
+	}
+}
+
+func fixOutputEnvVars(input batch.RegisterJobDefinitionInput, output *awstypes.JobDefinition) {
+	switch {
+	case input.ContainerProperties != nil:
+		output.ContainerProperties.Environment = fixEnvVars(input.ContainerProperties.Environment, output.ContainerProperties.Environment)
+	case input.EcsProperties != nil:
+		for i, task := range input.EcsProperties.TaskProperties {
+			for j, container := range task.Containers {
+				container.Environment = fixEnvVars(container.Environment, output.EcsProperties.TaskProperties[i].Containers[j].Environment)
+			}
+		}
+	case input.EksProperties != nil:
+	default:
+		// nothing to do
+	}
+}
+
 func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	conn := r.Meta().BatchClient(ctx)
 
@@ -1145,19 +1216,42 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 		Type:              awstypes.JobDefinitionType(plan.Type.ValueString()),
 		Tags:              getTagsIn(ctx),
 	}
-
-	// flex.WithIgnoredFieldNamesAppend("ArnPrefix"),
-	// flex.WithIgnoredFieldNamesAppend("TagsAll"),
-	// flex.WithIgnoredFieldNamesAppend("Type"),
-	// // Name and Arn are prefixed by JobDefinition
-	// flex.WithFieldNamePrefix("JobDefinition"),
 	resp.Diagnostics.Append(flex.Expand(ctx, plan, input)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
+	switch plan.Type.ValueString() { // warn about empty environment variables
+	case string(awstypes.JobDefinitionTypeContainer):
+		switch {
+		// note: these cases are exclusive; the exclusivity is enforced by validators in the schemas above.
+		case input.ContainerProperties != nil:
+			resp.Diagnostics.Append(
+				warnAboutEmptyEnvVars(input.ContainerProperties.Environment, path.Root("container_properties"))...,
+			)
+		case input.EcsProperties != nil:
+			for i, taskProps := range input.EcsProperties.TaskProperties {
+				for j, container := range taskProps.Containers {
+					attributePath := path.Root("ecs_properties").
+						AtName("task_properties").AtListIndex(i).
+						AtName("container").AtListIndex(j)
+					resp.Diagnostics.Append(warnAboutEmptyEnvVars(container.Environment, attributePath)...)
+				}
+			}
+		case input.EksProperties != nil:
+		default:
+			// do nothing
+		}
+	case string(awstypes.JobDefinitionTypeMultinode):
+		if nodeProperties := input.NodeProperties; nodeProperties != nil {
+			for i, prop := range nodeProperties.NodeRangeProperties {
+				attributePath := path.Root("node_properties").
+					AtName("node_range_properties").AtListIndex(i).
+					AtName("container").
+					AtName("environment")
+				resp.Diagnostics.Append(warnAboutEmptyEnvVars(prop.Container.Environment, attributePath)...)
+			}
+		}
 	}
 
 	out, err := conn.RegisterJobDefinition(ctx, input)
@@ -1184,6 +1278,7 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 		)
 		return
 	}
+	fixOutputEnvVars(*input, jd) // infallible
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
