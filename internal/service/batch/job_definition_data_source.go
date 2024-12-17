@@ -659,10 +659,10 @@ type retryStrategyModel struct {
 }
 
 type evaluateOnExitModel struct {
-	Action         types.String `tfsdk:"action"`
-	OnExitCode     types.String `tfsdk:"on_exit_code"`
-	OnReason       types.String `tfsdk:"on_reason"`
-	OnStatusReason types.String `tfsdk:"on_status_reason"`
+	Action         fwtypes.CaseInsensitiveString `tfsdk:"action"`
+	OnExitCode     types.String                  `tfsdk:"on_exit_code"`
+	OnReason       types.String                  `tfsdk:"on_reason"`
+	OnStatusReason types.String                  `tfsdk:"on_status_reason"`
 }
 
 type jobTimeoutModel struct {

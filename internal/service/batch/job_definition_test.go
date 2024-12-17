@@ -392,11 +392,19 @@ func TestAccBatchJobDefinition_ContainerProperties_advanced(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccJobDefinitionConfig_containerPropertiesAdvanced(rName, "val2", 1, 60),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"deregister_on_new_revision",
+					"retry_strategy.0.evaluate_on_exit.0.action",
+					// ^ ImportStateVerify ignores semantic equivalence of differently-cased strings
 				},
 			},
 			{
