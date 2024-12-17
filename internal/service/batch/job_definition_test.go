@@ -665,41 +665,36 @@ func TestAccBatchJobDefinition_NodeProperties_withEKS(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrEquivalentJSON(resourceName, "node_properties", `{
-						"mainNode": 0,
-						"nodeRangeProperties": [
-							{
-							"eksProperties": {
-								"podProperties": {
-								"containers": [
-									{
-									"args": [],
-									"command": ["sleep", "60"],
-									"env": [],
-									"image": "public.ecr.aws/amazonlinux/amazonlinux = 2",
-									"name": "test-eks-container-1",
-									"resources": { "requests": { "memory": "1024Mi", "cpu": "1" } },
-									"securityContext": {
-										"privileged": true,
-										"readOnlyRootFilesystem": true,
-										"runAsGroup": 3000,
-										"runAsNonRoot": true,
-										"runAsUser": 1000
-									},
-									"volumeMounts": []
-									}
-								],
-								"imagePullSecrets": [],
-								"initContainers": [],
-								"volumes": []
-								}
-							},
-							"instanceTypes": [],
-							"targetNodes": "0:"
-							}
-						],
-						"numNodes": 1
-						}`),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.main_node", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.args.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.command.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.command.0", "sleep"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.command.1", "60"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.env.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.image", "public.ecr.aws/amazonlinux/amazonlinux = 2"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.name", "test-eks-container-1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.image_pull_secrets.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.env.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.resources.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.resources.0.requests.memory", "1024Mi"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.resources.0.requests.cpu", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.privileged", "true"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.read_only_root_file_system", "true"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.run_as_user", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.run_as_non_root", "true"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.run_as_group", "3000"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.volume_mounts.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.init_containers.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.image_pull_secrets.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.instance_types.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.target_nodes", "0:"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.num_nodes", "1"),
 				),
 			},
 			{
@@ -1346,40 +1341,38 @@ resource "aws_batch_job_definition" "test" {
     attempts = 1
   }
 
-  node_properties = jsonencode({
-    mainNode = 0
-    numNodes = 1
-    nodeRangeProperties = [{
-      targetNodes = "0:"
-      eksProperties = {
-        podProperties = {
-          containers = [
-            {
-              name  = "test-eks-container-1"
-              image = "public.ecr.aws/amazonlinux/amazonlinux = 2"
-              command = [
-                "sleep",
-                "60"
-              ]
-              resources = {
-                requests = {
-                  memory = "1024Mi"
-                  cpu    = "1"
-                }
-              }
-              securityContext = {
-                "runAsUser"              = 1000
-                "runAsGroup"             = 3000
-                "privileged"             = true
-                "readOnlyRootFilesystem" = true
-                "runAsNonRoot"           = true
-              }
-            }
-          ]
-        }
-      }
-    }]
-  })
+	node_properties {
+		main_node = 0
+		num_nodes = 1
+		node_range_properties {
+			target_nodes = "0:"
+			eks_properties {
+				pod_properties {
+					containers {
+						name  = "test-eks-container-1"
+						image = "public.ecr.aws/amazonlinux/amazonlinux = 2"
+						command = [
+							"sleep",
+							"60"
+						]
+						resources {
+							requests = {
+								memory = "1024Mi"
+								cpu    = "1"
+							}
+						}
+						security_context {
+							run_as_user                = 1000
+							run_as_group               = 3000
+							privileged                 = true
+							read_only_root_file_system = true
+							run_as_non_root            = true
+						}
+					}
+				}
+			}
+		}
+  }
 }
   `, rName)
 }
@@ -1393,13 +1386,13 @@ resource "aws_batch_job_definition" "test" {
     attempts = 1
   }
 
-  node_properties = jsonencode({
+  node_properties {
     mainNode = 0
     numNodes = 1
-    nodeRangeProperties = [{
+    node_range_properties {
       targetNodes = "0:"
-      ecsProperties = {
-        taskProperties = [{
+      ecs_properties {
+        task_properties = [{
           containers = [{
             image      = "public.ecr.aws/amazonlinux/amazonlinux:1"
             command    = ["sleep", "60"]
@@ -1430,7 +1423,7 @@ resource "aws_batch_job_definition" "test" {
         }]
       }
     }]
-  })
+  }
 }
 `, rName)
 }

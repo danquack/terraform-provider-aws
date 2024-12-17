@@ -1249,7 +1249,9 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 					AtName("node_range_properties").AtListIndex(i).
 					AtName("container").
 					AtName("environment")
-				resp.Diagnostics.Append(warnAboutEmptyEnvVars(prop.Container.Environment, attributePath)...)
+				if container := prop.Container; container != nil {
+					resp.Diagnostics.Append(warnAboutEmptyEnvVars(container.Environment, attributePath)...)
+				}
 			}
 		}
 	}
