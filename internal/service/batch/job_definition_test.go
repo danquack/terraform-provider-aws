@@ -1395,42 +1395,42 @@ resource "aws_batch_job_definition" "test" {
   }
 
   node_properties {
-    mainNode = 0
-    numNodes = 1
+    main_node = 0
+    num_nodes = 1
     node_range_properties {
-      targetNodes = "0:"
+      target_nodes = "0:"
       ecs_properties {
-        task_properties = [{
-          containers = [{
+        task_properties {
+          containers {
             image      = "public.ecr.aws/amazonlinux/amazonlinux:1"
             command    = ["sleep", "60"]
             name       = "container_a"
             privileged = false
-            resourceRequirements = [{
+            resource_requirements {
+              type = "VCPU"
               value = "1"
-              type  = "VCPU"
-              },
-              {
-                value = "2048"
-                type  = "MEMORY"
-            }]
-            },
-            {
-              image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
-              command = ["sleep", "360"]
-              name    = "container_b"
-              resourceRequirements = [{
-                value = "1"
-                type  = "VCPU"
-                },
-                {
-                  value = "2048"
-                  type  = "MEMORY"
-              }]
-          }]
-        }]
+            }
+            resource_requirements {
+              type = "MEMORY"
+              value = "2048"
+            }
+          }
+          containers {
+            image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
+            command = ["sleep", "360"]
+            name    = "container_b"
+            resource_requirements {
+              type = "VCPU"
+              value = "1"
+            }
+            resource_requirements {
+              type = "MEMORY"
+              value = "2048"
+            }
+          }
+        }
       }
-    }]
+    }
   }
 }
 `, rName)
@@ -1462,14 +1462,8 @@ resource "aws_batch_job_definition" "test" {
   container_properties {
     command = ["ls", "%[2]s"]
     image   = "busybox"
-    resource_requirements {
-      type  = "MEMORY"
-      value = "512"
-    }
-    resource_requirements {
-      type  = "VCPU"
-      value = "1"
-    }
+    memory  = 512
+    vcpus   = 1
 
     volumes {
       name = "tmp"
