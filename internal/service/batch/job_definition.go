@@ -66,6 +66,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 		Attributes: map[string]schema.Attribute{
 			"command": schema.ListAttribute{
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.StringType,
 			},
 			"execution_role_arn": schema.StringAttribute{
@@ -126,6 +127,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 					Attributes: map[string]schema.Attribute{
 						"platform_version": schema.StringAttribute{
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -1285,7 +1287,7 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *resourceJobDefinition) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {

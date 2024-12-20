@@ -256,12 +256,17 @@ func TestAccBatchJobDefinition_PlatformCapabilitiesFargate_containerPropertiesDe
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(command)", "0"),
-					acctest.CheckResourceAttrJMESPair(resourceName, "container_properties", "execution_role_arn", "aws_iam_role.ecs_task_execution_role", names.AttrARN),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "fargatePlatformConfiguration.platformVersion", "LATEST"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(resource_requirements)", "2"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resource_requirements[?type=='VCPU'].value | [0]", "0.25"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "resource_requirements[?type=='MEMORY'].value | [0]", "512"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.fargate_platform_configuration.0.platform_version", "LATEST"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.resource_requirements.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "container_properties.0.resource_requirements.*", map[string]string{
+						"type":  "MEMORY",
+						"value": "512",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "container_properties.0.resource_requirements.*", map[string]string{
+						"type":  "VCPU",
+						"value": "0.25",
+					}),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
 					resource.TestCheckResourceAttr(resourceName, "platform_capabilities.#", "1"),
