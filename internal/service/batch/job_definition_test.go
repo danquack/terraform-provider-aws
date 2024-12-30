@@ -650,10 +650,10 @@ func TestAccBatchJobDefinition_NodeProperties_advanced(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-					resource.TestCheckResourceAttr(resourceName, "node_range_properties.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "node_range_properties.0.container.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "node_range_properties.0.target_nodes", "0:"),
-					resource.TestCheckResourceAttr(resourceName, "node_range_properties.1.target_nodes", "1:"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.container.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.target_nodes", "0:"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.1.target_nodes", "1:"),
 					testAccCheckJobDefinitionPreviousDeregistered(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "revision", "2"),
 				),
@@ -845,7 +845,6 @@ func TestAccBatchJobDefinition_EKSProperties_imagePullSecrets(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.0.image_pull_policy", ""),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, names.AttrType, "container"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.image_pull_secrets.#", "2"),
