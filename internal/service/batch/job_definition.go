@@ -1198,7 +1198,8 @@ func fixOutputEnvVars(input batch.RegisterJobDefinitionInput, output *awstypes.J
 	case input.EcsProperties != nil:
 		for i, task := range input.EcsProperties.TaskProperties {
 			for j, container := range task.Containers {
-				container.Environment = fixEnvVars(container.Environment, output.EcsProperties.TaskProperties[i].Containers[j].Environment)
+				target := &output.EcsProperties.TaskProperties[i].Containers[j]
+				target.Environment = fixEnvVars(container.Environment, target.Environment)
 			}
 		}
 	case input.EksProperties != nil:
@@ -1314,6 +1315,14 @@ func (r *resourceJobDefinition) Read(ctx context.Context, req resource.ReadReque
 		)
 		return
 	}
+	{ // HACK: preserve the existing env var order using a temporary RegisterJobDefinitionInput object
+		input := &batch.RegisterJobDefinitionInput{}
+		resp.Diagnostics.Append(flex.Expand(ctx, state, input)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		fixOutputEnvVars(*input, out)
+	}
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, out, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1373,6 +1382,7 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 		)
 		return
 	}
+	fixOutputEnvVars(*input, jd) // infallible
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &plan)...)
 
 	if plan.DeregisterOnNewRevision.ValueBool() {
