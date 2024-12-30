@@ -40,9 +40,11 @@ import (
 	"github.com/hashicorp/terraform-provider-aws/names"
 )
 
-// @Tags(identifierAttribute="arn")
-// @Testing(importIgnore="deregister_on_new_revision")
 // @FrameworkResource("aws_batch_job_definition", name="Job Definition")
+// @Tags
+// @Testing(importIgnore="deregister_on_new_revision")
+// @Testing(tagsIdentifierAttribute="arn")
+// @Testing(tagsUpdateGetTagsIn=true)
 func newResourceJobDefinition(_ context.Context) (resource.ResourceWithConfigure, error) {
 	r := &resourceJobDefinition{}
 
