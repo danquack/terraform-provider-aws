@@ -1006,20 +1006,20 @@ func TestAccBatchJobDefinition_ECSProperties_update(t *testing.T) {
 				Config: testAccJobDefinitionConfig_ECSProperties_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckJobDefinitionExists(ctx, resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "ecs_properties"),
-					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties)", "1"),
-					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties[0].containers)", "2"),
-					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties[0].containers[0].environment)", "1"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.0.task_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.0.task_properties.0.containers.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.0.task_properties.0.containers.0.environment.#", "1"),
 				),
 			},
 			{
 				Config: testAccJobDefinitionConfig_ECSProperties_updated(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckJobDefinitionExists(ctx, resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "ecs_properties"),
-					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties)", "1"),
-					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties[0].containers)", "2"),
-					acctest.CheckResourceAttrJMES(resourceName, "ecs_properties", "length(taskProperties[0].containers[0].environment)", "2"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.0.task_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.0.task_properties.0.containers.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "ecs_properties.0.task_properties.0.containers.0.environment.#", "2"),
 				),
 			},
 		},
@@ -2180,9 +2180,9 @@ resource "aws_batch_job_definition" "test" {
         }
 
         environment {
-          name  = "test 1"
-          value = "Environment Variable 1"
-        }
+					name  = "test 1"
+					value = "Environment Variable 1"
+				}
 
         essential = true
         log_configuration {
@@ -2258,73 +2258,61 @@ resource "aws_batch_job_definition" "test" {
 
   ecs_properties {
     task_properties {
-	execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-	containers = [
-		{
-		image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
-		command = ["sleep", "60"]
-		dependsOn = [
-			{
-			containerName = "container_b"
-			condition     = "COMPLETE"
+		execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+		containers {
+			image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
+			command = ["sleep", "60"]
+			depends_on {
+				container_name = "container_b"
+				condition     = "COMPLETE"
 			}
-		]
-		secrets = [
-			{
-			name      = "TEST"
-			valueFrom = "DUMMY"
+			secrets {
+				name       = "TEST"
+				value_from = "DUMMY"
 			}
-		]
-		environment = [
-			{
-			name  = "test 1"
-			value = "Environment Variable 1"
-			},
-			{
-			name  = "test 2"
-			value = "Environment Variable 2"
+			environment  {
+				name  = "test 1"
+				value = "Environment Variable 1"
 			}
-		]
-		essential = true
-		log_configuration {
-			logDriver = "awslogs"
-			options = {
-			"awslogs-group"         = %[1]q
-			"awslogs-region"        = %[2]q
-			"awslogs-stream-prefix" = "ecs"
+			environment {
+				name  = "test 2"
+				value = "Environment Variable 2"
+			}
+			essential = true
+			log_configuration {
+				log_driver = "awslogs"
+				options = {
+					"awslogs-group"         = %[1]q
+					"awslogs-region"        = %[2]q
+					"awslogs-stream-prefix" = "ecs"
+				}
+			}
+			name                     = "container_a"
+			privileged               = false
+			readonly_root_filesystem = false
+			resource_requirements {
+				value = "1.0"
+				type  = "VCPU"
+			}
+			resource_requirements {
+				value = "2048"
+				type  = "MEMORY"
 			}
 		}
-		name                   = "container_a"
-		privileged             = false
-		readonlyRootFilesystem = false
-		resource_requirements = [
-			{
-			value = "1.0"
-			type  = "VCPU"
-			},
-			{
-			value = "2048"
-			type  = "MEMORY"
+		containers {
+			image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
+			command   = ["sleep", "360"]
+			name      = "container_b"
+			essential = false
+			resource_requirements {
+				value = "1.0"
+				type  = "VCPU"
 			}
-		]
-		},
-		{
-		image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
-		command   = ["sleep", "360"]
-		name      = "container_b"
-		essential = false
-		resource_requirements = [
-			{
-			value = "1.0"
-			type  = "VCPU"
-			},
-			{
-			value = "2048"
-			type  = "MEMORY"
+			resource_requirements {
+				value = "2048"
+				type  = "MEMORY"
 			}
-		]
 		}
-	]
 	}
   }
 }
