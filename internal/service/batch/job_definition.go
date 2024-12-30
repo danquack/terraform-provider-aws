@@ -963,6 +963,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				Required: true,
 				Validators: []validator.String{
 					enum.FrameworkValidate[awstypes.JobDefinitionType](),
+					JobDefinitionTypeValidator{},
 				},
 			},
 			names.AttrTimeout: schema.ListAttribute{
