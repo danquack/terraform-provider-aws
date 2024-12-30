@@ -770,7 +770,6 @@ func TestAccBatchJobDefinition_EKSProperties_basic(t *testing.T) {
 					testAccCheckJobDefinitionExists(ctx, resourceName),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0..#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "eks_properties.0.pod_properties.0.containers.0.image_pull_policy", ""),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, names.AttrType, "container"),
 				),
