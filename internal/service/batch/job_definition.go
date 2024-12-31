@@ -57,10 +57,23 @@ const (
 
 type resourceJobDefinition struct {
 	framework.ResourceWithConfigure
+	resource.ResourceWithUpgradeState
 }
 
 func (r *resourceJobDefinition) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "aws_batch_job_definition"
+}
+
+func (r *resourceJobDefinition) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	schemaV0 := r.jobDefinitionSchema0(ctx)
+
+	return map[int64]resource.StateUpgrader{
+		0: {
+			// Migrate string properties of ecs_properties, node_properties, and container_properties to hcl.
+			PriorSchema:   &schemaV0,
+			StateUpgrader: upgradeJobDefinitionResourceStateV0toV1,
+		},
+	}
 }
 
 func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.NestedBlockObject {
@@ -1113,6 +1126,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				},
 			},
 		},
+		Version: 1,
 	}
 }
 
