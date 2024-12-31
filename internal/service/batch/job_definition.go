@@ -1073,7 +1073,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 					},
 				},
 			},
-			"retry_strategy": schema.ListNestedBlock{
+			"retry_strategy": schema.ListNestedBlock{ // https://docs.aws.amazon.com/batch/latest/APIReference/API_RetryStrategy.html
 				CustomType: fwtypes.NewListNestedObjectTypeOf[retryStrategyModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -1088,6 +1088,9 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
 									"action": schema.StringAttribute{
+										// https://docs.aws.amazon.com/batch/latest/APIReference/API_EvaluateOnExit.html#Batch-Type-EvaluateOnExit-action
+										// The only allowed values are "RETRY" and "EXIT".
+										// TODO: validate values.
 										Optional: true,
 										Computed: true,
 									},

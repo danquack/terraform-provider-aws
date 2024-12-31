@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -982,7 +983,6 @@ func TestAccBatchJobDefinition_emptyRetryStrategy(t *testing.T) {
 	ctx := acctest.Context(t)
 
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
-	resourceName := "aws_batch_job_definition.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(ctx, t); testAccPreCheck(ctx, t) },
@@ -991,12 +991,8 @@ func TestAccBatchJobDefinition_emptyRetryStrategy(t *testing.T) {
 		CheckDestroy:             testAccCheckJobDefinitionDestroy(ctx),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccJobDefinitionConfig_emptyRetryStrategy(rName),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName),
-					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
-				),
-				ExpectNonEmptyPlan: true,
+				Config:      testAccJobDefinitionConfig_emptyRetryStrategy(rName),
+				ExpectError: regexp.MustCompile(`ClientException: Error executing request, Exception : RetryAttempts must be provided with retry strategy`),
 			},
 		},
 	})
@@ -2140,6 +2136,7 @@ resource "aws_batch_job_definition" "test" {
     memory  = 128
     vcpus   = 1
   }
+  retry_strategy {}
 }
 `, rName)
 }
