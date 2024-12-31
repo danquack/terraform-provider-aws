@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/batch"
 	awstypes "github.com/aws/aws-sdk-go-v2/service/batch/types"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -1078,8 +1079,9 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"attempts": schema.Int32Attribute{
-							Optional: true,
-							Computed: true,
+							Optional:   true,
+							Computed:   true,
+							Validators: []validator.Int32{int32validator.Between(1, 10)},
 						},
 					},
 					Blocks: map[string]schema.Block{
@@ -1089,22 +1091,35 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 								Attributes: map[string]schema.Attribute{
 									"action": schema.StringAttribute{
 										// https://docs.aws.amazon.com/batch/latest/APIReference/API_EvaluateOnExit.html#Batch-Type-EvaluateOnExit-action
-										// The only allowed values are "RETRY" and "EXIT".
-										// TODO: validate values.
 										Optional: true,
 										Computed: true,
+										Validators: []validator.String{
+											enum.FrameworkValidateIgnoreCase[awstypes.RetryAction](),
+										},
 									},
 									"on_exit_code": schema.StringAttribute{
 										Optional: true,
 										Computed: true,
+										Validators: []validator.String{
+											stringvalidator.LengthBetween(1, 512),
+											stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9]*\*?$`), "must contain only numbers, and can optionally end with an asterisk"),
+										},
 									},
 									"on_reason": schema.StringAttribute{
 										Optional: true,
 										Computed: true,
+										Validators: []validator.String{
+											stringvalidator.LengthBetween(1, 512),
+											stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9A-Za-z.:\s]*\*?$`), "must contain letters, numbers, periods, colons, and white space, and can optionally end with an asterisk"),
+										},
 									},
 									"on_status_reason": schema.StringAttribute{
 										Optional: true,
 										Computed: true,
+										Validators: []validator.String{
+											stringvalidator.LengthBetween(1, 512),
+											stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9A-Za-z.:\s]*\*?$`), "must contain letters, numbers, periods, colons, and white space, and can optionally end with an asterisk"),
+										},
 									},
 								},
 							},
