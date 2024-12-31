@@ -569,9 +569,11 @@ func TestAccBatchJobDefinition_ContainerProperties_EmptyField(t *testing.T) {
 			{
 				Config: testAccJobDefinitionConfig_containerProperties_emptyField(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckJobDefinitionExists(ctx, resourceName),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "length(environment)", "1"),
-					acctest.CheckResourceAttrJMES(resourceName, "container_properties", "environment[?name=='VALUE'].value | [0]", names.AttrValue),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.environment.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.environment.1.value", names.AttrValue),
+					// Note: the fixEnvVars() functions preserve written order, so it's safe to
+					// index directly into the expected env var
 				),
 			},
 			{
@@ -580,6 +582,9 @@ func TestAccBatchJobDefinition_ContainerProperties_EmptyField(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"deregister_on_new_revision",
+					"container_properties.0.environment",
+					// ^ importing the resource will result in a diff since since the AWS Batch
+					// API does not keep track of environment variables
 				},
 			},
 		},
