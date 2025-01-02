@@ -147,7 +147,9 @@ func (r *resourceJobDefinition) jobDefinitionSchema0(ctx context.Context) schema
 									"action": schema.StringAttribute{
 										// https://docs.aws.amazon.com/batch/latest/APIReference/API_EvaluateOnExit.html#Batch-Type-EvaluateOnExit-action
 										// The only allowed values are "RETRY" and "EXIT".
-										// TODO: validate values.
+										Validators: []validator.String{
+											enum.FrameworkValidateIgnoreCase[awstypes.RetryAction](),
+										},
 										Optional: true,
 										Computed: true,
 									},
