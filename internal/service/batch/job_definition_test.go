@@ -258,7 +258,7 @@ func TestAccBatchJobDefinition_PlatformCapabilitiesFargate_containerPropertiesDe
 					testAccCheckJobDefinitionExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "batch", regexache.MustCompile(fmt.Sprintf(`job-definition/%s:\d+`, rName))),
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.command.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "container_properties.0.fargate_platform_configuration.0.platform_version", "LATEST"),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.fargate_platform_configuration.#", "0"), // default block ignored
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.resource_requirements.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "container_properties.0.resource_requirements.*", map[string]string{
 						"type":  "MEMORY",
@@ -286,6 +286,8 @@ func TestAccBatchJobDefinition_PlatformCapabilitiesFargate_containerPropertiesDe
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"deregister_on_new_revision",
+					"container_properties.0.fargate_platform_configuration",
+					// on import, ignoring the default block value isn't necessary.
 				},
 			},
 		},
@@ -316,6 +318,7 @@ func TestAccBatchJobDefinition_PlatformCapabilities_fargate(t *testing.T) {
 						"aws_iam_role.ecs_task_execution_role",
 						names.AttrARN,
 					),
+					resource.TestCheckResourceAttr(resourceName, "container_properties.0.fargate_platform_configuration.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.fargate_platform_configuration.0.platform_version", "LATEST"),
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.network_configuration.0.assign_public_ip", "DISABLED"),
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.resource_requirements.#", "2"),

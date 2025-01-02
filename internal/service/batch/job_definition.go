@@ -137,8 +137,10 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 					},
 				},
 			},
+			// TODO: convert to an optional SingleNestedAttribute once v6 support is stabilized.
 			"fargate_platform_configuration": schema.ListNestedBlock{
 				CustomType: fwtypes.NewListNestedObjectTypeOf[fargatePlatformConfigurationModel](ctx),
+				Validators: []validator.List{listvalidator.SizeAtMost(1)},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"platform_version": schema.StringAttribute{
@@ -1145,6 +1147,107 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 	}
 }
 
+func ignoreFargatePlatformCapabilitiesDefault(ctx context.Context, plan resourceJobDefinitionModel, jd *awstypes.JobDefinition) (diagnostics diag.Diagnostics) {
+	// This is a hack, but it's necessary because the batch API responds with a default
+	// `"fargatePlatformConfiguration" : { "platformVersion" : "LATEST" }` when you pass
+	// `"platformCapabilities" : [ "FARGATE" ]` in a container properties object.
+	// Ideally, `fargate_platform_configuration` would be optional and computed, but
+	// to mark fargate_platform_configuration as optional and computed, we'd need to use
+	// `types.SingleNestedAttribute`, which is incompatible with protocol v5. Thus,
+	// `fargate_platform_configuration` needs to be represented as a list of length 0 or 1,
+	// which precludes using a `PlanModifier` to fill in the expected default: `PlanModifier`s
+	// can't alter list length.
+
+	{ // check if the top-level `platform_capabilities` includes `"FARGATE"`.
+		// if not, this hack isn't needed.
+		fargateInPlatformCapabilities := false
+		for i, attr := range plan.PlatformCapabilities.Elements() {
+			if str, ok := attr.(types.String); ok {
+				if str.IsNull() || str.IsUnknown() {
+					diagnostics.AddWarning("null/unknown value", fmt.Sprintf("@ %d", i))
+					continue // skip for now
+				}
+				if str.ValueString() == "FARGATE" {
+					fargateInPlatformCapabilities = true
+					break
+				}
+			}
+		}
+		if !fargateInPlatformCapabilities {
+			return
+		}
+	}
+
+	ignoreDefaultFargatePlatformConfigValue := func(p *awstypes.ContainerProperties) {
+		if p != nil {
+			if f := p.FargatePlatformConfiguration; f != nil {
+				if f.PlatformVersion != nil && *f.PlatformVersion == "LATEST" {
+					p.FargatePlatformConfiguration = nil
+					return
+				}
+			}
+		}
+	}
+
+	containerProps, ds := plan.ContainerProperties.ToPtr(ctx)
+	if diagnostics.Append(ds...); diagnostics.HasError() {
+		return
+	}
+	if containerProps != nil {
+		// if there are container_properties defined, but there's no container_properties.fargate_platform_configuration block
+		// remove the
+		fg, ds := containerProps.FargatePlatformConfiguration.ToPtr(ctx)
+		if diagnostics.Append(ds...); diagnostics.HasError() {
+			return
+		}
+		if fg == nil { // there's no block definition
+			diagnostics.AddAttributeWarning(
+				path.Root("container_properties").AtName("fargate_platform_configuration"),
+				"ignoring default value", "since a top-level `platform_capabilities` block included a \"FARGATE\" value",
+			)
+			ignoreDefaultFargatePlatformConfigValue(jd.ContainerProperties)
+		}
+		return // since plan.ContainerProperties is present, there can't be a top-level node_properties block
+	}
+
+	planNodeProps, ds := plan.NodeProperties.ToPtr(ctx)
+	if diagnostics.Append(ds...); diagnostics.HasError() {
+		return
+	}
+	if planNodeProps != nil {
+		// handle possible problems in node_properties.node_range_properties[*].container.fargate_platform_configuration
+		// default values
+
+		nodeRangeProps, ds := planNodeProps.NodeRangeProperties.ToSlice(ctx)
+		if diagnostics.Append(ds...); diagnostics.HasError() {
+			return
+		}
+
+		for i, nodeRangeProp := range nodeRangeProps {
+			container, ds := nodeRangeProp.Container.ToPtr(ctx)
+			if diagnostics.Append(ds...); diagnostics.HasError() {
+				return
+			}
+			if container != nil {
+				fargateConfig, ds := container.FargatePlatformConfiguration.ToPtr(ctx)
+				if diagnostics.Append(ds...); diagnostics.HasError() {
+					return
+				}
+				if fargateConfig == nil {
+					if observedNodeProps := jd.NodeProperties; observedNodeProps != nil {
+						if len(observedNodeProps.NodeRangeProperties) > i {
+							ignoreDefaultFargatePlatformConfigValue(observedNodeProps.NodeRangeProperties[i].Container)
+						}
+					}
+				}
+			}
+		}
+	}
+	// ecs, eks don't use a container model that includes fargate_platform_configuration,
+	// so we can ignore those cases.
+	return
+}
+
 func (r *resourceJobDefinition) readJobDefinitionIntoState(ctx context.Context, jd *awstypes.JobDefinition, state *resourceJobDefinitionModel) (resp diag.Diagnostics) {
 	resp.Append(flex.Flatten(ctx, jd, state,
 		flex.WithIgnoredFieldNamesAppend("TagsAll"),
@@ -1319,6 +1422,10 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 	fixOutputEnvVars(*input, jd) // infallible
+	resp.Diagnostics.Append(ignoreFargatePlatformCapabilitiesDefault(ctx, plan, jd)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1354,6 +1461,10 @@ func (r *resourceJobDefinition) Read(ctx context.Context, req resource.ReadReque
 			return
 		}
 		fixOutputEnvVars(*input, out)
+	}
+	ignoreFargatePlatformCapabilitiesDefault(ctx, state, out)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, out, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -1414,7 +1525,9 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 	fixOutputEnvVars(*input, jd) // infallible
+	ignoreFargatePlatformCapabilitiesDefault(ctx, plan, jd)
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, jd, &plan)...)
+	// even in case of errors, continue through de-registering the old definition
 
 	if plan.DeregisterOnNewRevision.ValueBool() {
 		tflog.Debug(ctx, fmt.Sprintf("[DEBUG] Deleting previous Batch Job Definition: %s", state.ID.ValueString()))
