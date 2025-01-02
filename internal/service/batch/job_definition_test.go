@@ -1100,7 +1100,7 @@ func TestAccBatchJobDefinition_updateWithTags(t *testing.T) {
 }
 
 func testAccCheckJobDefinitionExists(ctx context.Context, n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+	return func(s *terraform.State) (err error) {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
 			return fmt.Errorf("Not found: %s", n)
@@ -1108,13 +1108,8 @@ func testAccCheckJobDefinitionExists(ctx context.Context, n string) resource.Tes
 
 		conn := acctest.Provider.Meta().(*conns.AWSClient).BatchClient(ctx)
 
-		_, err := tfbatch.FindJobDefinitionByARN(ctx, conn, rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-
-		return nil
+		_, err = tfbatch.FindJobDefinitionByARN(ctx, conn, rs.Primary.ID)
+		return err
 	}
 }
 

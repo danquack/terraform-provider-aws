@@ -1443,7 +1443,7 @@ func (r *resourceJobDefinition) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	out, err := findJobDefinitionByARN(ctx, conn, state.ID.ValueString())
-	if tfresource.NotFound(err) {
+	if err != nil && tfresource.NotFound(err) {
 		resp.State.RemoveResource(ctx)
 		return
 	}
