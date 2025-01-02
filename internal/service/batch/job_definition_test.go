@@ -1366,37 +1366,37 @@ resource "aws_batch_job_definition" "test" {
     attempts = 1
   }
 
-	node_properties {
-		main_node = 0
-		num_nodes = 1
-		node_range_properties {
-			target_nodes = "0:"
-			eks_properties {
-				pod_properties {
-					containers {
-						name  = "test-eks-container-1"
-						image = "public.ecr.aws/amazonlinux/amazonlinux = 2"
-						command = [
-							"sleep",
-							"60"
-						]
-						resources {
-							requests = {
-								memory = "1024Mi"
-								cpu    = "1"
-							}
-						}
-						security_context {
-							run_as_user                = 1000
-							run_as_group               = 3000
-							privileged                 = true
-							read_only_root_file_system = true
-							run_as_non_root            = true
-						}
-					}
-				}
-			}
-		}
+  node_properties {
+    main_node = 0
+    num_nodes = 1
+    node_range_properties {
+      target_nodes = "0:"
+      eks_properties {
+        pod_properties {
+          containers {
+            name  = "test-eks-container-1"
+            image = "public.ecr.aws/amazonlinux/amazonlinux = 2"
+            command = [
+              "sleep",
+              "60"
+            ]
+            resources {
+              requests = {
+                memory = "1024Mi"
+                cpu    = "1"
+              }
+            }
+            security_context {
+              run_as_user                = 1000
+              run_as_group               = 3000
+              privileged                 = true
+              read_only_root_file_system = true
+              run_as_non_root            = true
+            }
+          }
+        }
+      }
+    }
   }
 }
   `, rName)
@@ -1424,11 +1424,11 @@ resource "aws_batch_job_definition" "test" {
             name       = "container_a"
             privileged = false
             resource_requirements {
-              type = "VCPU"
+              type  = "VCPU"
               value = "1"
             }
             resource_requirements {
-              type = "MEMORY"
+              type  = "MEMORY"
               value = "2048"
             }
           }
@@ -1437,11 +1437,11 @@ resource "aws_batch_job_definition" "test" {
             command = ["sleep", "360"]
             name    = "container_b"
             resource_requirements {
-              type = "VCPU"
+              type  = "VCPU"
               value = "1"
             }
             resource_requirements {
-              type = "MEMORY"
+              type  = "MEMORY"
               value = "2048"
             }
           }
@@ -1980,11 +1980,11 @@ resource "aws_batch_job_definition" "test" {
           }
         }
         security_context {
-          privileged                  = true
-          read_only_root_file_system  = true
-          run_as_group                = 1000
-          run_as_user                 = 1000
-          run_as_non_root             = true
+          privileged                 = true
+          read_only_root_file_system = true
+          run_as_group               = 1000
+          run_as_user                = 1000
+          run_as_non_root            = true
         }
         volume_mounts {
           mount_path = "/tmp"
@@ -2194,9 +2194,9 @@ resource "aws_batch_job_definition" "test" {
         }
 
         environment {
-					name  = "test 1"
-					value = "Environment Variable 1"
-				}
+          name  = "test 1"
+          value = "Environment Variable 1"
+        }
 
         essential = true
         log_configuration {
@@ -2272,62 +2272,62 @@ resource "aws_batch_job_definition" "test" {
 
   ecs_properties {
     task_properties {
-		execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-		containers {
-			image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
-			command = ["sleep", "60"]
-			depends_on {
-				container_name = "container_b"
-				condition     = "COMPLETE"
-			}
-			secrets {
-				name       = "TEST"
-				value_from = "DUMMY"
-			}
-			environment  {
-				name  = "test 1"
-				value = "Environment Variable 1"
-			}
-			environment {
-				name  = "test 2"
-				value = "Environment Variable 2"
-			}
-			essential = true
-			log_configuration {
-				log_driver = "awslogs"
-				options = {
-					"awslogs-group"         = %[1]q
-					"awslogs-region"        = %[2]q
-					"awslogs-stream-prefix" = "ecs"
-				}
-			}
-			name                     = "container_a"
-			privileged               = false
-			readonly_root_filesystem = false
-			resource_requirements {
-				value = "1.0"
-				type  = "VCPU"
-			}
-			resource_requirements {
-				value = "2048"
-				type  = "MEMORY"
-			}
-		}
-		containers {
-			image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
-			command   = ["sleep", "360"]
-			name      = "container_b"
-			essential = false
-			resource_requirements {
-				value = "1.0"
-				type  = "VCPU"
-			}
-			resource_requirements {
-				value = "2048"
-				type  = "MEMORY"
-			}
-		}
-	}
+      execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+      containers {
+        image   = "public.ecr.aws/amazonlinux/amazonlinux:1"
+        command = ["sleep", "60"]
+        depends_on {
+          container_name = "container_b"
+          condition      = "COMPLETE"
+        }
+        secrets {
+          name       = "TEST"
+          value_from = "DUMMY"
+        }
+        environment {
+          name  = "test 1"
+          value = "Environment Variable 1"
+        }
+        environment {
+          name  = "test 2"
+          value = "Environment Variable 2"
+        }
+        essential = true
+        log_configuration {
+          log_driver = "awslogs"
+          options = {
+            "awslogs-group"         = %[1]q
+            "awslogs-region"        = %[2]q
+            "awslogs-stream-prefix" = "ecs"
+          }
+        }
+        name                     = "container_a"
+        privileged               = false
+        readonly_root_filesystem = false
+        resource_requirements {
+          value = "1.0"
+          type  = "VCPU"
+        }
+        resource_requirements {
+          value = "2048"
+          type  = "MEMORY"
+        }
+      }
+      containers {
+        image     = "public.ecr.aws/amazonlinux/amazonlinux:1"
+        command   = ["sleep", "360"]
+        name      = "container_b"
+        essential = false
+        resource_requirements {
+          value = "1.0"
+          type  = "VCPU"
+        }
+        resource_requirements {
+          value = "2048"
+          type  = "MEMORY"
+        }
+      }
+    }
   }
 }
 `, rName, acctest.Region())

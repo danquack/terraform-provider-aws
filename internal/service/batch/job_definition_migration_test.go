@@ -66,9 +66,9 @@ resource "aws_batch_job_definition" "test" {
   type = "container"
 
   container_properties = jsonencode({
-    image = "my-image"
-    vcpus = 1
-    memory = 1024
+    image   = "my-image"
+    vcpus   = 1
+    memory  = 1024
     command = ["echo", "hello"]
   })
 }`, rName)
@@ -81,9 +81,9 @@ resource "aws_batch_job_definition" "test" {
   type = "container"
 
   container_properties {
-   	image = "my-image"
-    vcpus = 1
-    memory = 1024
+    image   = "my-image"
+    vcpus   = 1
+    memory  = 1024
     command = ["echo", "world"]
   }
 }`, rName)
