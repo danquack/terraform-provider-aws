@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	fwtypes "github.com/hashicorp/terraform-provider-aws/internal/framework/types"
+	"github.com/hashicorp/terraform-provider-aws/names"
 )
 
 type JobDefinitionTypeValidator struct{}
@@ -51,7 +52,7 @@ func (v JobDefinitionTypeValidator) ValidateString(ctx context.Context, req vali
 	}
 
 	var typeValue types.String
-	diags := req.Config.GetAttribute(ctx, path.Root("type"), &typeValue)
+	diags := req.Config.GetAttribute(ctx, path.Root(names.AttrType), &typeValue)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

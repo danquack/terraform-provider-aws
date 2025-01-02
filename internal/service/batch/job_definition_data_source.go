@@ -61,7 +61,7 @@ func (d *jobDefinitionDataSource) SchemaEKSContainer(ctx context.Context) schema
 			"image_pull_policy": schema.StringAttribute{
 				Computed: true,
 			},
-			"name": schema.StringAttribute{
+			names.AttrName: schema.StringAttribute{
 				Computed: true,
 			},
 		},
@@ -70,10 +70,10 @@ func (d *jobDefinitionDataSource) SchemaEKSContainer(ctx context.Context) schema
 				CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						names.AttrName: schema.StringAttribute{
 							Computed: true,
 						},
-						"value": schema.StringAttribute{
+						names.AttrValue: schema.StringAttribute{
 							Computed: true,
 						},
 					},

@@ -186,7 +186,7 @@ func upgradeJobDefinitionResourceStateV0toV1(ctx context.Context, request resour
 		NodeProperties          types.String                                        `tfsdk:"node_properties"`
 		Parameters              fwtypes.MapOfString                                 `tfsdk:"parameters"`
 		PlatformCapabilities    types.Set                                           `tfsdk:"platform_capabilities"`
-		PropagateTags           types.Bool                                          `tfsdk:"propagate_tags"`
+		PropagateTags           types.Bool                                          `tfsdk:"propagate_tags" autoflex:",legacy"`
 		Revision                types.Int32                                         `tfsdk:"revision"`
 		RetryStrategy           fwtypes.ListNestedObjectValueOf[retryStrategyModel] `tfsdk:"retry_strategy"`
 		SchedulingPriority      types.Int32                                         `tfsdk:"scheduling_priority"`

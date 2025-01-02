@@ -118,10 +118,10 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 				CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						names.AttrName: schema.StringAttribute{
 							Optional: true,
 						},
-						"value": schema.StringAttribute{
+						names.AttrValue: schema.StringAttribute{
 							Optional: true,
 						},
 					},
@@ -207,7 +207,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 							CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
+									names.AttrName: schema.StringAttribute{
 										Optional: true,
 									},
 									"value_from": schema.StringAttribute{
@@ -253,10 +253,10 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 				CustomType: fwtypes.NewListNestedObjectTypeOf[resourceRequirementModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"type": schema.StringAttribute{
+						names.AttrType: schema.StringAttribute{
 							Optional: true,
 						},
-						"value": schema.StringAttribute{
+						names.AttrValue: schema.StringAttribute{
 							Optional: true,
 						},
 					},
@@ -289,7 +289,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 				CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						names.AttrName: schema.StringAttribute{
 							Optional: true,
 						},
 						"value_from": schema.StringAttribute{
@@ -305,7 +305,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 						"hard_limit": schema.Int64Attribute{
 							Optional: true,
 						},
-						"name": schema.StringAttribute{
+						names.AttrName: schema.StringAttribute{
 							Optional: true,
 						},
 						"soft_limit": schema.Int64Attribute{
@@ -318,7 +318,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 				CustomType: fwtypes.NewListNestedObjectTypeOf[volumeModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						names.AttrName: schema.StringAttribute{
 							Optional: true,
 						},
 					},
@@ -393,7 +393,7 @@ func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.N
 					stringvalidator.OneOf(imagePullPolicy_Values()...),
 				},
 			},
-			"name": schema.StringAttribute{
+			names.AttrName: schema.StringAttribute{
 				Optional: true,
 			},
 		},
@@ -402,10 +402,10 @@ func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.N
 				CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						names.AttrName: schema.StringAttribute{
 							Optional: true,
 						},
-						"value": schema.StringAttribute{
+						names.AttrValue: schema.StringAttribute{
 							Optional: true,
 						},
 					},
@@ -460,7 +460,7 @@ func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.N
 						"read_only": schema.BoolAttribute{
 							Optional: true,
 						},
-						"name": schema.StringAttribute{
+						names.AttrName: schema.StringAttribute{
 							Optional: true,
 						},
 					},
@@ -510,7 +510,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 										Optional: true,
 										Computed: true,
 									},
-									"name": schema.StringAttribute{
+									names.AttrName: schema.StringAttribute{
 										Optional: true,
 									},
 									"privileged": schema.BoolAttribute{
@@ -542,10 +542,10 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 										CustomType: fwtypes.NewListNestedObjectTypeOf[keyValuePairModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"name": schema.StringAttribute{
+												names.AttrName: schema.StringAttribute{
 													Optional: true,
 												},
-												"value": schema.StringAttribute{
+												names.AttrValue: schema.StringAttribute{
 													Optional: true,
 												},
 											},
@@ -610,7 +610,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 													CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
 													NestedObject: schema.NestedBlockObject{
 														Attributes: map[string]schema.Attribute{
-															"name": schema.StringAttribute{
+															names.AttrName: schema.StringAttribute{
 																Optional: true,
 															},
 															"value_from": schema.StringAttribute{
@@ -652,10 +652,10 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 										CustomType: fwtypes.NewListNestedObjectTypeOf[resourceRequirementModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"type": schema.StringAttribute{
+												names.AttrType: schema.StringAttribute{
 													Optional: true,
 												},
-												"value": schema.StringAttribute{
+												names.AttrValue: schema.StringAttribute{
 													Optional: true,
 												},
 											},
@@ -665,7 +665,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 										CustomType: fwtypes.NewListNestedObjectTypeOf[secretModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"name": schema.StringAttribute{
+												names.AttrName: schema.StringAttribute{
 													Optional: true,
 												},
 												"value_from": schema.StringAttribute{
@@ -678,7 +678,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 										CustomType: fwtypes.NewListNestedObjectTypeOf[ulimitModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"name": schema.StringAttribute{
+												names.AttrName: schema.StringAttribute{
 													Optional: true,
 												},
 												"hard_limit": schema.Int64Attribute{
@@ -733,7 +733,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 							CustomType: fwtypes.NewListNestedObjectTypeOf[volumeModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
+									names.AttrName: schema.StringAttribute{
 										Optional: true,
 									},
 								},
@@ -827,7 +827,7 @@ func (r *resourceJobDefinition) SchemaEKSProperties(ctx context.Context) schema.
 							CustomType: fwtypes.NewListNestedObjectTypeOf[eksImagePullSecrets](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
+									names.AttrName: schema.StringAttribute{
 										Optional: true,
 									},
 								},
@@ -853,7 +853,7 @@ func (r *resourceJobDefinition) SchemaEKSProperties(ctx context.Context) schema.
 							CustomType: fwtypes.NewListNestedObjectTypeOf[eksVolumeModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
+									names.AttrName: schema.StringAttribute{
 										Optional: true,
 									},
 								},
@@ -1367,7 +1367,6 @@ func (r *resourceJobDefinition) Read(ctx context.Context, req resource.ReadReque
 func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	conn := r.Meta().BatchClient(ctx)
 
-	// TIP: -- 2. Fetch the plan
 	var plan, state resourceJobDefinitionModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -1495,7 +1494,7 @@ type resourceJobDefinitionModel struct {
 	NodeProperties          fwtypes.ListNestedObjectValueOf[nodePropertiesModel]      `tfsdk:"node_properties"`
 	Parameters              fwtypes.MapOfString                                       `tfsdk:"parameters"`
 	PlatformCapabilities    types.Set                                                 `tfsdk:"platform_capabilities"`
-	PropagateTags           types.Bool                                                `tfsdk:"propagate_tags" autoflex:",legacy"`
+	PropagateTags           types.Bool                                                `tfsdk:"propagate_tags"`
 	Revision                types.Int32                                               `tfsdk:"revision"`
 	RetryStrategy           fwtypes.ListNestedObjectValueOf[retryStrategyModel]       `tfsdk:"retry_strategy"`
 	SchedulingPriority      types.Int32                                               `tfsdk:"scheduling_priority"`
