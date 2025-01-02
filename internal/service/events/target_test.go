@@ -2346,10 +2346,10 @@ resource "aws_batch_job_definition" "test" {
   type = "container"
 
   container_properties {
-	command = ["ls", "-la"],
-	image = "busybox",
-	memory = 512,
-	vcpus = 1
+    command = ["ls", "-la"]
+    image   = "busybox"
+    memory  = 512
+    vcpus   = 1
   }
 }
 `, rName)

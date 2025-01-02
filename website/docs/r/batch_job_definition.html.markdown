@@ -167,7 +167,7 @@ resource "aws_batch_job_definition" "test" {
       type  = "VCPU"
       value = "0.25"
     }
-   resource_requirements {
+    resource_requirements {
       type  = "MEMORY"
       value = "512"
     }
