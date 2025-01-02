@@ -5,8 +5,8 @@ package batch
 
 import (
 	"context"
-	"regexp"
 
+	"github.com/YakDriver/regexache"
 	awstypes "github.com/aws/aws-sdk-go-v2/service/batch/types"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -69,7 +69,7 @@ func (r *resourceJobDefinition) jobDefinitionSchema0(ctx context.Context) schema
 				},
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[0-9A-Za-z]{1}[0-9A-Za-z_-]{0,127}$`),
+						regexache.MustCompile(`^[0-9A-Za-z]{1}[0-9A-Za-z_-]{0,127}$`),
 						`must be up to 128 letters (uppercase and lowercase), numbers, underscores and dashes, and must start with an alphanumeric`,
 					),
 				},
@@ -144,7 +144,7 @@ func (r *resourceJobDefinition) jobDefinitionSchema0(ctx context.Context) schema
 							CustomType: fwtypes.NewListNestedObjectTypeOf[evaluateOnExitModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"action": schema.StringAttribute{
+									names.AttrAction: schema.StringAttribute{
 										// https://docs.aws.amazon.com/batch/latest/APIReference/API_EvaluateOnExit.html#Batch-Type-EvaluateOnExit-action
 										// The only allowed values are "RETRY" and "EXIT".
 										Validators: []validator.String{

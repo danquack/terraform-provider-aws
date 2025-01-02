@@ -79,7 +79,7 @@ func (d *jobDefinitionDataSource) SchemaEKSContainer(ctx context.Context) schema
 					},
 				},
 			},
-			"resources": schema.ListNestedBlock{
+			names.AttrResources: schema.ListNestedBlock{
 				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerResourceRequirementsModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -247,7 +247,7 @@ func (d *jobDefinitionDataSource) Schema(ctx context.Context, request datasource
 										CustomType: fwtypes.NewListNestedObjectTypeOf[eksImagePullSecrets](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"name": schema.StringAttribute{
+												names.AttrName: schema.StringAttribute{
 													Computed: true,
 												},
 											},
@@ -273,7 +273,7 @@ func (d *jobDefinitionDataSource) Schema(ctx context.Context, request datasource
 										CustomType: fwtypes.NewListNestedObjectTypeOf[eksVolumeModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"name": schema.StringAttribute{
+												names.AttrName: schema.StringAttribute{
 													Computed: true,
 												},
 											},

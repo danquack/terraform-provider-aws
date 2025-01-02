@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -261,12 +260,12 @@ func TestAccBatchJobDefinition_PlatformCapabilitiesFargate_containerPropertiesDe
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.fargate_platform_configuration.#", "0"), // default block ignored
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.resource_requirements.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "container_properties.0.resource_requirements.*", map[string]string{
-						"type":  "MEMORY",
-						"value": "512",
+						names.AttrType:  "MEMORY",
+						names.AttrValue: "512",
 					}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "container_properties.0.resource_requirements.*", map[string]string{
-						"type":  "VCPU",
-						"value": "0.25",
+						names.AttrType:  "VCPU",
+						names.AttrValue: "0.25",
 					}),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
@@ -323,12 +322,12 @@ func TestAccBatchJobDefinition_PlatformCapabilities_fargate(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.network_configuration.0.assign_public_ip", "DISABLED"),
 					resource.TestCheckResourceAttr(resourceName, "container_properties.0.resource_requirements.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "container_properties.0.resource_requirements.*", map[string]string{
-						"type":  "MEMORY",
-						"value": "512",
+						names.AttrType:  "MEMORY",
+						names.AttrValue: "512",
 					}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "container_properties.0.resource_requirements.*", map[string]string{
-						"type":  "VCPU",
-						"value": "0.25",
+						names.AttrType:  "VCPU",
+						names.AttrValue: "0.25",
 					}),
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttr(resourceName, "parameters.%", "0"),
@@ -719,10 +718,10 @@ func TestAccBatchJobDefinition_NodeProperties_withEKS(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.resources.0.requests.memory", "1024Mi"),
 					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.resources.0.requests.cpu", "1"),
 					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.privileged", "true"),
-					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.read_only_root_file_system", "true"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.privileged", acctest.CtTrue),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.read_only_root_file_system", acctest.CtTrue),
 					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.run_as_user", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.run_as_non_root", "true"),
+					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.run_as_non_root", acctest.CtTrue),
 					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.security_context.0.run_as_group", "3000"),
 					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.containers.0.volume_mounts.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "node_properties.0.node_range_properties.0.eks_properties.0.pod_properties.0.init_containers.#", "0"),
@@ -1000,7 +999,7 @@ func TestAccBatchJobDefinition_emptyRetryStrategy(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccJobDefinitionConfig_emptyRetryStrategy(rName),
-				ExpectError: regexp.MustCompile(`ClientException: Error executing request, Exception : RetryAttempts must be provided with retry strategy`),
+				ExpectError: regexache.MustCompile(`ClientException: Error executing request, Exception : RetryAttempts must be provided with retry strategy`),
 			},
 		},
 	})

@@ -4,23 +4,17 @@
 package batch_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
-	awstypes "github.com/aws/aws-sdk-go-v2/service/batch/types"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-provider-aws/internal/acctest"
-	"github.com/hashicorp/terraform-provider-aws/internal/conns"
-	"github.com/hashicorp/terraform-provider-aws/internal/service/batch"
 	"github.com/hashicorp/terraform-provider-aws/names"
 )
 
-func TestAccAWSBatchJobDefinition_MigrateFromSDKToPluginFramework(t *testing.T) {
+func TestAccBatchJobDefinition_MigrateFromSDKToPluginFramework(t *testing.T) {
 	ctx := acctest.Context(t)
-	var jobDef awstypes.JobDefinition
 	resourceName := "aws_batch_job_definition.test"
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 
@@ -37,18 +31,18 @@ func TestAccAWSBatchJobDefinition_MigrateFromSDKToPluginFramework(t *testing.T) 
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBatchJobDefinitionExists(ctx, resourceName, &jobDef),
+					testAccCheckJobDefinitionExists(ctx, resourceName),
 				),
-				Config: testAccBatchJobDefinitionConfig_initial(rName),
+				Config: testAccJobDefinitionConfig_initial(rName),
 			},
 			{
-				Config:                   testAccBatchJobDefinitionConfig_updated(rName),
+				Config:                   testAccJobDefinitionConfig_updated(rName),
 				ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       true,
 			},
 			{
-				Config:                   testAccBatchJobDefinitionConfig_updated(rName),
+				Config:                   testAccJobDefinitionConfig_updated(rName),
 				ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "container_properties.#", "1"),
@@ -59,7 +53,7 @@ func TestAccAWSBatchJobDefinition_MigrateFromSDKToPluginFramework(t *testing.T) 
 	})
 }
 
-func testAccBatchJobDefinitionConfig_initial(rName string) string {
+func testAccJobDefinitionConfig_initial(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
   name = "%s"
@@ -74,7 +68,7 @@ resource "aws_batch_job_definition" "test" {
 }`, rName)
 }
 
-func testAccBatchJobDefinitionConfig_updated(rName string) string {
+func testAccJobDefinitionConfig_updated(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_batch_job_definition" "test" {
   name = "%s"
@@ -87,26 +81,4 @@ resource "aws_batch_job_definition" "test" {
     command = ["echo", "world"]
   }
 }`, rName)
-}
-
-func testAccCheckBatchJobDefinitionExists(ctx context.Context, resourceName string, jobDef *awstypes.JobDefinition) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// Get the resource from the Terraform state
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Batch Job Definition not found: %s", resourceName)
-		}
-
-		// Extract the job definition name from the resource state
-		jobDefArn := rs.Primary.Attributes["arn"]
-
-		conn := acctest.Provider.Meta().(*conns.AWSClient).BatchClient(ctx)
-		job, err := batch.FindJobDefinitionByARN(ctx, conn, jobDefArn)
-
-		if err != nil {
-			return fmt.Errorf("failed to describe Batch Job Definition: %s", err)
-		}
-		jobDef = job
-		return nil
-	}
 }

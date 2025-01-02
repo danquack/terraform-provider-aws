@@ -7,9 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
+	"github.com/YakDriver/regexache"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/batch"
 	awstypes "github.com/aws/aws-sdk-go-v2/service/batch/types"
@@ -85,13 +85,13 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 				Computed:    true,
 				ElementType: types.StringType,
 			},
-			"execution_role_arn": schema.StringAttribute{
+			names.AttrExecutionRoleARN: schema.StringAttribute{
 				Optional: true,
 			},
 			"image": schema.StringAttribute{
 				Optional: true,
 			},
-			"instance_type": schema.StringAttribute{
+			names.AttrInstanceType: schema.StringAttribute{
 				Optional: true,
 			},
 			"job_role_arn": schema.StringAttribute{
@@ -179,7 +179,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 									"container_path": schema.StringAttribute{
 										Optional: true,
 									},
-									"size": schema.Int64Attribute{
+									names.AttrSize: schema.Int64Attribute{
 										Optional: true,
 									},
 									"mount_options": schema.ListAttribute{
@@ -237,7 +237,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 					},
 				},
 			},
-			"network_configuration": schema.ListNestedBlock{
+			names.AttrNetworkConfiguration: schema.ListNestedBlock{
 				CustomType: fwtypes.NewListNestedObjectTypeOf[networkConfigurationModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -329,7 +329,7 @@ func (r *resourceJobDefinition) SchemaContainer(ctx context.Context) schema.Nest
 							CustomType: fwtypes.NewListNestedObjectTypeOf[efsVolumeConfigurationModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"file_system_id": schema.StringAttribute{
+									names.AttrFileSystemID: schema.StringAttribute{
 										Optional: true,
 									},
 									"root_directory": schema.StringAttribute{
@@ -413,7 +413,7 @@ func (r *resourceJobDefinition) SchemaEKSContainer(ctx context.Context) schema.N
 					},
 				},
 			},
-			"resources": schema.ListNestedBlock{
+			names.AttrResources: schema.ListNestedBlock{
 				CustomType: fwtypes.NewListNestedObjectTypeOf[eksContainerResourceRequirementsModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -479,7 +479,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 				CustomType: fwtypes.NewListNestedObjectTypeOf[ecsTaskPropertiesModel](ctx),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"execution_role_arn": schema.StringAttribute{
+						names.AttrExecutionRoleARN: schema.StringAttribute{
 							Optional: true,
 						},
 						"ipc_mode": schema.StringAttribute{
@@ -531,7 +531,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 										CustomType: fwtypes.NewListNestedObjectTypeOf[taskContainerDependencyModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"condition": schema.StringAttribute{
+												names.AttrCondition: schema.StringAttribute{
 													Optional: true,
 												},
 												"container_name": schema.StringAttribute{
@@ -582,7 +582,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 															"container_path": schema.StringAttribute{
 																Optional: true,
 															},
-															"size": schema.Int64Attribute{
+															names.AttrSize: schema.Int64Attribute{
 																Optional: true,
 															},
 															"mount_options": schema.ListAttribute{
@@ -705,7 +705,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 								},
 							},
 						},
-						"network_configuration": schema.ListNestedBlock{
+						names.AttrNetworkConfiguration: schema.ListNestedBlock{
 							CustomType: fwtypes.NewListNestedObjectTypeOf[networkConfigurationModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
@@ -753,7 +753,7 @@ func (r *resourceJobDefinition) SchemaECSProperties(ctx context.Context) schema.
 										CustomType: fwtypes.NewListNestedObjectTypeOf[efsVolumeConfigurationModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"file_system_id": schema.StringAttribute{
+												names.AttrFileSystemID: schema.StringAttribute{
 													Optional: true,
 												},
 												"root_directory": schema.StringAttribute{
@@ -877,7 +877,7 @@ func (r *resourceJobDefinition) SchemaEKSProperties(ctx context.Context) schema.
 										CustomType: fwtypes.NewListNestedObjectTypeOf[eksHostPathModel](ctx),
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"path": schema.StringAttribute{
+												names.AttrPath: schema.StringAttribute{
 													Optional: true,
 												},
 											},
@@ -937,7 +937,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 				},
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[0-9A-Za-z]{1}[0-9A-Za-z_-]{0,127}$`),
+						regexache.MustCompile(`^[0-9A-Za-z]{1}[0-9A-Za-z_-]{0,127}$`),
 						`must be up to 128 letters (uppercase and lowercase), numbers, underscores and dashes, and must start with an alphanumeric`,
 					),
 				},
@@ -1059,7 +1059,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 									"target_nodes": schema.StringAttribute{
 										Optional: true,
 									},
-									"instance_types": schema.ListAttribute{
+									names.AttrInstanceType: schema.ListAttribute{
 										Computed:    true,
 										Optional:    true,
 										ElementType: types.StringType,
@@ -1104,7 +1104,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 							CustomType: fwtypes.NewListNestedObjectTypeOf[evaluateOnExitModel](ctx),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
-									"action": schema.StringAttribute{
+									names.AttrAction: schema.StringAttribute{
 										// https://docs.aws.amazon.com/batch/latest/APIReference/API_EvaluateOnExit.html#Batch-Type-EvaluateOnExit-action
 										Optional: true,
 										Computed: true,
@@ -1117,7 +1117,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 										Computed: true,
 										Validators: []validator.String{
 											stringvalidator.LengthBetween(1, 512),
-											stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9]*\*?$`), "must contain only numbers, and can optionally end with an asterisk"),
+											stringvalidator.RegexMatches(regexache.MustCompile(`^[0-9]*\*?$`), "must contain only numbers, and can optionally end with an asterisk"),
 										},
 									},
 									"on_reason": schema.StringAttribute{
@@ -1125,7 +1125,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 										Computed: true,
 										Validators: []validator.String{
 											stringvalidator.LengthBetween(1, 512),
-											stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9A-Za-z.:\s]*\*?$`), "must contain letters, numbers, periods, colons, and white space, and can optionally end with an asterisk"),
+											stringvalidator.RegexMatches(regexache.MustCompile(`^[0-9A-Za-z.:\s]*\*?$`), "must contain letters, numbers, periods, colons, and white space, and can optionally end with an asterisk"),
 										},
 									},
 									"on_status_reason": schema.StringAttribute{
@@ -1133,7 +1133,7 @@ func (r *resourceJobDefinition) Schema(ctx context.Context, req resource.SchemaR
 										Computed: true,
 										Validators: []validator.String{
 											stringvalidator.LengthBetween(1, 512),
-											stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9A-Za-z.:\s]*\*?$`), "must contain letters, numbers, periods, colons, and white space, and can optionally end with an asterisk"),
+											stringvalidator.RegexMatches(regexache.MustCompile(`^[0-9A-Za-z.:\s]*\*?$`), "must contain letters, numbers, periods, colons, and white space, and can optionally end with an asterisk"),
 										},
 									},
 								},
@@ -1181,7 +1181,7 @@ func ignoreFargatePlatformCapabilitiesDefault(ctx context.Context, plan resource
 	ignoreDefaultFargatePlatformConfigValue := func(p *awstypes.ContainerProperties) {
 		if p != nil {
 			if f := p.FargatePlatformConfiguration; f != nil {
-				if f.PlatformVersion != nil && *f.PlatformVersion == "LATEST" {
+				if f.PlatformVersion != nil && aws.ToString(f.PlatformVersion) == "LATEST" {
 					p.FargatePlatformConfiguration = nil
 					return
 				}
@@ -1389,7 +1389,7 @@ func (r *resourceJobDefinition) Create(ctx context.Context, req resource.CreateR
 				attributePath := path.Root("node_properties").
 					AtName("node_range_properties").AtListIndex(i).
 					AtName("container").
-					AtName("environment")
+					AtName(names.AttrEnvironment)
 				if container := prop.Container; container != nil {
 					resp.Diagnostics.Append(warnAboutEmptyEnvVars(container.Environment, attributePath)...)
 				}
@@ -1463,9 +1463,6 @@ func (r *resourceJobDefinition) Read(ctx context.Context, req resource.ReadReque
 		fixOutputEnvVars(*input, out)
 	}
 	ignoreFargatePlatformCapabilitiesDefault(ctx, state, out)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 	resp.Diagnostics.Append(r.readJobDefinitionIntoState(ctx, out, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1492,10 +1489,6 @@ func (r *resourceJobDefinition) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	resp.Diagnostics.Append(flex.Expand(ctx, plan, input)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
